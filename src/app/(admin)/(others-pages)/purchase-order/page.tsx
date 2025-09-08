@@ -1,7 +1,7 @@
 // import ComponentCard from "@/components/common/ComponentCard";
 import EditableTitleCard from "@/components/common/EditableTitleCard";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
-import FormGrid from "@/components/purchaseOrder/FormGrid";
+import FormGrid from "@/components/page-components/purchaseOrder/FormGrid";
 // import BasicTableOne from "@/components/tables/BasicTableOne";
 import PurchaseOrderTable from "@/components/tables/PurchaseOrderTable";
 import { Metadata } from "next";

@@ -1,5 +1,7 @@
-"use client"
-import React, { useState } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
+
+import React from "react";
 import {
   Table,
   TableBody,
@@ -7,34 +9,36 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
+import { useGetUOMsQuery, useUpdateUOMMutation } from "@/app/redux/api/masters/uomApi";
+import PrimaryLoader from "../ui/loaders/PrimaryLoader";
 
-interface UOM {
-  id: number;
-  code: string;
-  name: string;
-  status: "Active" | "Inactive";
-}
-
-const initialData: UOM[] = [
-  { id: 1, code: "PCS", name: "Pieces", status: "Active" },
-  { id: 2, code: "KG", name: "Kilogram", status: "Active" },
-  { id: 3, code: "LTR", name: "Litre", status: "Inactive" },
-  { id: 4, code: "G", name: "Gram", status: "Active" },
-];
 
 export default function UOMTable() {
-  const [uomData, setUomData] = useState<UOM[]>(initialData);
+  const { data: uomData = [], isLoading, error } = useGetUOMsQuery();
+  const [updateUOM, { isLoading: isUpdating }] = useUpdateUOMMutation();
 
   // Handle toggle switch
-  const handleToggle = (id: number) => {
-    setUomData((prev) =>
-      prev.map((uom) =>
-        uom.id === id
-          ? { ...uom, status: uom.status === "Active" ? "Inactive" : "Active" }
-          : uom
-      )
-    );
+  const handleToggle = async (_id: string, currentStatus: "Active" | "Inactive") => {
+    try {
+      const newStatus = currentStatus === "Active" ? "Inactive" : "Active";
+      await updateUOM({ _id, status: newStatus }).unwrap();
+    } catch (err) {
+      console.error('Error updating UOM status:', err);
+      alert('Failed to update UOM status');
+    }
   };
+
+  if (isLoading) {
+    return <div className="p-6 text-gray-500 dark:text-gray-400 flex justify-center"><PrimaryLoader/></div>;
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 text-red-600 dark:text-red-400">
+        Error loading UOMs: {(error as any).data?.message || 'Unknown error'}
+      </div>
+    );
+  }
 
   return (
     <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
@@ -68,7 +72,7 @@ export default function UOMTable() {
             {/* Table Body */}
             <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
               {uomData.map((uom) => (
-                <TableRow key={uom.id}>
+                <TableRow key={uom._id}>
                   <TableCell className="px-5 py-4 sm:px-6 text-start text-theme-sm text-gray-800 dark:text-white/90">
                     {uom.code}
                   </TableCell>
@@ -80,8 +84,9 @@ export default function UOMTable() {
                       <input
                         type="checkbox"
                         checked={uom.status === "Active"}
-                        onChange={() => handleToggle(uom.id)}
+                        onChange={() => handleToggle(uom._id, uom.status)}
                         className="sr-only peer"
+                        disabled={isUpdating}
                       />
                       <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 
                         dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 

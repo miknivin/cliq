@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React from "react";
 import {
   Table,
   TableBody,
@@ -7,9 +7,12 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
+import { useGetVendorsQuery, useUpdateVendorStatusMutation } from "@/app/redux/api/masters/vendorApi";
+import PrimaryLoader from "../ui/loaders/PrimaryLoader";
+import { toast } from "react-toastify";
 
 interface Vendor {
-  id: number;
+  id: string;
   code: string;
   name: string;
   phone: string;
@@ -18,50 +21,61 @@ interface Vendor {
   status: "Active" | "Inactive";
 }
 
-const initialData: Vendor[] = [
-  {
-    id: 1,
-    code: "100",
-    name: "ABC Suppliers",
-    phone: "9876543210",
-    email: "abc@suppliers.com",
-    gstin: "22AAAAA0000A1Z5",
-    status: "Active",
-  },
-  {
-    id: 2,
-    code: "101",
-    name: "XYZ Traders",
-    phone: "9123456780",
-    email: "xyz@traders.com",
-    gstin: "27BBBBB1111B2Z6",
-    status: "Inactive",
-  },
-];
-
 export default function VendorTable() {
-  const [vendorData, setVendorData] = useState<Vendor[]>(initialData);
+  const { data: vendorResponse, isLoading, isError, error } = useGetVendorsQuery({});
+   const [updateVendor, { isLoading: isUpdating }] = useUpdateVendorStatusMutation();
+  // Map API response to Vendor interface
+  const vendorData: Vendor[] = vendorResponse?.vendors
+    ?.filter((vendor): vendor is NonNullable<typeof vendor> => vendor !== undefined && vendor !== null)
+    .map((vendor) => ({
+      id: vendor._id,
+      code: vendor.basicInfo.code,
+      name: vendor.basicInfo.name,
+      phone: vendor.addressAndContact.phone,
+      email: vendor.addressAndContact.email,
+      gstin: vendor.taxAndCompliance.gstin || "",
+      status: vendor.status ?? "Inactive",
+    })) || [];
 
-  // Toggle status
-  const handleToggle = (id: number) => {
-    setVendorData((prev) =>
-      prev.map((vendor) =>
-        vendor.id === id
-          ? {
-              ...vendor,
-              status: vendor.status === "Active" ? "Inactive" : "Active",
-            }
-          : vendor
-      )
-    );
+  // Toggle status (placeholder, as mutation isn't provided)
+
+
+    const handleToggle = async (id: string, currentStatus: "Active" | "Inactive") => {
+    try {
+      const newStatus = currentStatus === "Active" ? "Inactive" : "Active";
+      await updateVendor({ _id: id, status: newStatus }).unwrap();
+      
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      toast.error(`Failed to update vendor status: ${err.data?.message || "Unknown error"}`);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center p-4">
+        <PrimaryLoader />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="p-4 text-red-600 dark:text-red-400">
+        Error loading vendors: {error?.toString() || "Unknown error"}
+      </div>
+    );
+  }
+
+  if (!vendorData.length) {
+    return <div className="p-4 text-gray-500 dark:text-gray-400">No vendors found</div>;
+  }
 
   return (
     <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
       <div className="max-w-full overflow-x-auto">
         <div className="min-w-[900px]">
           <Table>
-            {/* Table Header */}
             <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
               <TableRow>
                 <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Code</TableCell>
@@ -72,8 +86,6 @@ export default function VendorTable() {
                 <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Status</TableCell>
               </TableRow>
             </TableHeader>
-
-            {/* Table Body */}
             <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
               {vendorData.map((vendor) => (
                 <TableRow key={vendor.id}>
@@ -87,7 +99,8 @@ export default function VendorTable() {
                       <input
                         type="checkbox"
                         checked={vendor.status === "Active"}
-                        onChange={() => handleToggle(vendor.id)}
+                        onChange={() => handleToggle(vendor.id,vendor.status)}
+                        disabled={isUpdating}
                         className="sr-only peer"
                       />
                       <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 

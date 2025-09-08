@@ -5,11 +5,10 @@ import { useCreateVendorMutation } from "@/app/redux/api/masters/vendorApi";
 import { RootState } from "@/app/redux/rootReducer";
 import { resetForm, updateField } from "@/app/redux/slices/masters/vendorFormSlice";
 import Autocomplete from "@/components/ui/auto-complete/CustomAutocomplete";
-import { IVendor } from "@/lib/models/masters/Vendor";
+import { IVendorForm } from "@/app/redux/slices/masters/vendorFormSlice";
 import { validateVendor } from "@/lib/validators/vendorValidation";
 import React, { useState } from "react";
 import { useDispatch, useSelector } from 'react-redux';
-
 
 // Helper constants for styling
 const INPUT_CLASS = "bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500";
@@ -22,7 +21,7 @@ interface ValidationErrorFrontend {
 
 const VendorForm: React.FC = () => {
   const dispatch = useDispatch();
-  const formData = useSelector((state: RootState) => state.vendor);
+  const formData = useSelector((state: RootState) => state.vendor) as IVendorForm;
   const [createVendor, { isLoading, error: apiError }] = useCreateVendorMutation();
   const [validationErrors, setValidationErrors] = useState<ValidationErrorFrontend[]>([]);
 
@@ -48,7 +47,7 @@ const VendorForm: React.FC = () => {
         ...formData[section],
         [field]: value,
       },
-    } as IVendor; // Ensure type safety
+    } as IVendorForm; // Use IVendorForm instead of IVendor
 
     setValidationErrors(validateVendor(updatedData, 'frontend') as ValidationErrorFrontend[]);
   };
@@ -75,7 +74,7 @@ const VendorForm: React.FC = () => {
       dispatch(resetForm());
       setValidationErrors([]);
     } catch (err: any) {
-      alert(`Failed to save vendor: ${err.data?.error || 'Unknown error'}`);
+      alert(`Failed to save vendor: ${err.data?.message || 'Unknown error'}`);
     }
   };
 
@@ -87,7 +86,7 @@ const VendorForm: React.FC = () => {
 
       {apiError && (
         <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-          API Error: {(apiError as any).data?.error || 'An unexpected error occurred'}
+          API Error: {(apiError as any).data?.message || 'An unexpected error occurred'}
         </div>
       )}
 
@@ -412,7 +411,7 @@ const VendorForm: React.FC = () => {
       </div>
 
       {/* Buttons */}
-      <div className="flex justify-end mt-8 gap-4">
+      <div className="flex justify-end mt-8 gap-4 w-full dark:bg-gray-900 rounded-lg bg-gray-25 py-3 px-2 sticky bottom-0.5">
         <button
           type="button"
           className="px-5 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200"

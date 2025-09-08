@@ -4,8 +4,8 @@ import Link from "next/link";
 import React from "react";
 
 export const metadata: Metadata = {
-  title: "Masters | TailAdmin - Next.js Dashboard Template",
-  description: "Masters section in TailAdmin Dashboard Template",
+  title: "Masters | Cliq",
+  description: "",
 };
 
 const masters = [
@@ -24,6 +24,12 @@ const masters = [
     desc: "Store customer details like codes, contacts, and addresses.",
     href: "#",
   },
+   {
+    title: "Currency Master",
+    desc: "Maintain supported currencies, exchange rates, and symbols.",
+    href: "currency",
+  },
+  
   {
     title: "Warehouse Master",
     desc: "Define warehouses, bins, racks, and storage locations.",
@@ -54,12 +60,7 @@ const masters = [
     desc: "Manage user accounts, roles, and access permissions.",
     href: "#",
   },
-  {
-    title: "Currency Master",
-    desc: "Maintain supported currencies, exchange rates, and symbols.",
-    href: "currency",
-  },
-  
+ 
 ];
 
 export default function Masters() {

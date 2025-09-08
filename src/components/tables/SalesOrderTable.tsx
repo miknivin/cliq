@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import GridComponent, { Column } from "../ui/data-grid/GridComponent";
-import PurchaseOrderFooter from "../purchaseOrder/PurchaseOrderFooter";
+import SalesOrderFooter from "../salesOrder/SalesOrderFooter";
 // Define the row type for TypeScript
 interface Row {
   id: number;
@@ -162,14 +162,13 @@ export default function SalesOrderTable() {
           Remove Last Row
         </button>
       </div>
-      {/* Grid Component */}
       <GridComponent
         columns={initialColumns}
         rows={rows}
         onRowUpdate={handleRowUpdate}
         onRowDelete={handleRowDelete}
       />
-      <PurchaseOrderFooter/>
+      <SalesOrderFooter/>
     </div>
   );
 }

@@ -2,7 +2,7 @@
 "use client";
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import GridComponent, { Column } from "../ui/data-grid/GridComponent";
-import PurchaseOrderFooter from "../purchaseOrder/PurchaseOrderFooter";
+import PurchaseOrderFooter from "../page-components/purchaseOrder/PurchaseOrderFooter";
 
 // Define the row type for TypeScript
 interface Row {

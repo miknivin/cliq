@@ -1,26 +1,39 @@
+import { useCreateUOMMutation } from "@/app/redux/api/masters/uomApi";
+import WhiteLoader from "@/components/ui/loaders/WhiteLoaders";
 import React, { useState } from "react";
+import { toast } from "react-toastify";
 
 interface UOMFormProps {
-   onClose: () => void;
+  onClose: () => void;
 }
 
-export default function UOMForm({ onClose  }: UOMFormProps) {
+export default function UOMForm({ onClose }: UOMFormProps) {
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [status, setStatus] = useState<"Active" | "Inactive">("Active");
+  const [createUOM, { isLoading, error }] = useCreateUOMMutation();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onClose();
-    setCode("");
-    setName("");
-    setStatus("Active");
+
+    try {
+      await createUOM({ code, name, status }).unwrap();
+      // Reset form and close on success
+      setCode("");
+      setName("");
+      setStatus("Active");
+      toast.success("Added UOM");
+      onClose();
+    } catch (err) {
+      console.error('Error creating UOM:', err);
+      // Error is handled via the error state from the mutation
+    }
   };
 
   return (
     <form
       onSubmit={handleSubmit}
-      className=" mx-auto p-6 rounded-xl shadow-md"
+      className="mx-auto p-6 rounded-xl shadow-md"
     >
       {/* Code Input */}
       <div className="mb-6">
@@ -90,12 +103,22 @@ export default function UOMForm({ onClose  }: UOMFormProps) {
         </label>
       </div>
 
+      {/* Error Message */}
+      {error && (
+        <div className="mb-6 text-sm text-red-600 dark:text-red-400">
+          {error && 'data' in error && error.data !== null && typeof error.data === 'object' && 'error' in error.data
+            ? (error.data as { error: string }).error
+            : 'An error occurred while creating the UOM'}
+        </div>
+      )}
+
       {/* Submit Button */}
       <button
         type="submit"
-        className="w-full inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-brand-300"
+        disabled={isLoading}
+        className="w-full inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-brand-300 disabled:cursor-not-allowed"
       >
-        Save UOM
+        {isLoading ? <WhiteLoader/> : 'Save UOM'}
       </button>
     </form>
   );

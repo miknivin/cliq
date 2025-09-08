@@ -39,6 +39,7 @@ async function dbConnect(): Promise<Mongoose> {
     const opts = {
       serverSelectionTimeoutMS: 8000, // Fail fast if server isn’t found (5s)
       connectTimeoutMS: 15000, // Max time to establish connection (10s)
+      maxPoolSize: 15,
     };
 
     console.log(

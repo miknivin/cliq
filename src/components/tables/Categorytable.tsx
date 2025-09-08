@@ -1,5 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import React, { useState } from "react";
+
+import React from "react";
 import {
   Table,
   TableBody,
@@ -7,35 +9,33 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
+import { useGetCategoriesQuery, useUpdateCategoryMutation } from "@/app/redux/api/masters/categoryApi";
+import PrimaryLoader from "../ui/loaders/PrimaryLoader";
 
-interface Category {
-  id: number;
-  code: string;
-  name: string;
-  parentCategory?: string; // optional
-  status: "Active" | "Inactive";
-}
 
-const initialData: Category[] = [
-  { id: 1, code: "CAT001", name: "Electronics", status: "Active" },
-  { id: 2, code: "CAT002", name: "Mobile Phones", parentCategory: "Electronics", status: "Active" },
-  { id: 3, code: "CAT003", name: "Furniture", status: "Inactive" },
-  { id: 4, code: "CAT004", name: "Chairs", parentCategory: "Furniture", status: "Active" },
-];
 
 export default function CategoryTable() {
-  const [categoryData, setCategoryData] = useState<Category[]>(initialData);
+  const { data: categoryData = [], isLoading, error } = useGetCategoriesQuery();
+  const [updateCategory] = useUpdateCategoryMutation();
 
   // Handle toggle switch
-  const handleToggle = (id: number) => {
-    setCategoryData((prev) =>
-      prev.map((cat) =>
-        cat.id === id
-          ? { ...cat, status: cat.status === "Active" ? "Inactive" : "Active" }
-          : cat
-      )
-    );
+  const handleToggle = async (_id: string, currentStatus: "Active" | "Inactive") => {
+    try {
+      const newStatus = currentStatus === "Active" ? "Inactive" : "Active";
+      await updateCategory({ _id, status: newStatus }).unwrap();
+    } catch (err) {
+      console.error('Error updating category status:', err);
+      alert('Failed to update category status');
+    }
   };
+
+  if (isLoading) {
+    return <div className="w-full flex justify-center"><PrimaryLoader/></div>;
+  }
+
+  if (error) {
+    return <div>Error loading categories: {(error as any).data?.message || 'Unknown error'}</div>;
+  }
 
   return (
     <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
@@ -74,8 +74,8 @@ export default function CategoryTable() {
 
             {/* Table Body */}
             <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-              {categoryData.map((cat) => (
-                <TableRow key={cat.id}>
+              {categoryData.map((cat, index) => (
+                <TableRow key={cat._id ? String(cat._id) : index}>
                   <TableCell className="px-5 py-4 sm:px-6 text-start text-theme-sm text-gray-800 dark:text-white/90">
                     {cat.code}
                   </TableCell>
@@ -90,7 +90,7 @@ export default function CategoryTable() {
                       <input
                         type="checkbox"
                         checked={cat.status === "Active"}
-                        onChange={() => handleToggle(cat.id)}
+                        onChange={() => handleToggle(cat._id, cat.status)}
                         className="sr-only peer"
                       />
                       <div

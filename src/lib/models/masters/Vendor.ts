@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document, Model, model } from 'mongoose';
+import { ICurrency } from './Currency';
 
 // Interface for Basic Info
 interface IBasicInfo {
@@ -24,7 +25,7 @@ interface IAddressAndContact {
 interface ICreditAndFinance {
   creditLimit: number;
   dueDays: number;
-  currency: string;
+  currency: ICurrency | mongoose.Types.ObjectId;
   paymentTerms: string;
   remark: string;
 }
@@ -55,6 +56,7 @@ export interface IVendor extends Document {
   taxAndCompliance: ITaxAndCompliance;
   bankDetails: IBankDetails;
   other: IOther;
+  status: 'Active' | 'Inactive';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -80,7 +82,7 @@ const VendorSchema: Schema<IVendor> = new Schema(
     creditAndFinance: {
       creditLimit: { type: Number, required: false },
       dueDays: { type: Number, required: false },
-      currency: { type: String, required: false },
+      currency: { type: Schema.Types.ObjectId, ref: 'Currency', required: false },
       paymentTerms: { type: String, required: false },
       remark: { type: String, required: false },
     },
@@ -95,6 +97,12 @@ const VendorSchema: Schema<IVendor> = new Schema(
     },
     other: {
       company: { type: String, required: false },
+    },
+    status: {
+      type: String,
+      enum: ['Active', 'Inactive'],
+      default: 'Active',
+      required: true,
     },
   },
   {
