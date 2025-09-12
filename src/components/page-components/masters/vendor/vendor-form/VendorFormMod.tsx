@@ -68,12 +68,13 @@ const VendorForm: React.FC = () => {
         <div className="space-y-5">
           <BasicInfo control={control} errors={errors} onNoMatchClick={handleNoMatchClick} />
           <AddressAndContact control={control} errors={errors} />
+          <Other control={control} errors={errors} />
         </div>
         <div className="space-y-5">
           <CreditAndFinance control={control} errors={errors} onNoMatchClick={handleNoMatchClick} />
           <TaxAndCompliance control={control} errors={errors} />
           <BankDetails control={control} errors={errors} />
-          <Other control={control} errors={errors} />
+
         </div>
       </div>
       <div className="flex justify-end mt-8 gap-4 w-full dark:bg-gray-900 rounded-lg bg-gray-25 py-3 px-2">

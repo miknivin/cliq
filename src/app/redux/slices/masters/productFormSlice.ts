@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { IVendor } from '@/lib/models/masters/Vendor';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface BasicProductInfo {
   code: string;
   name: string;
   otherLanguage?: string;
-  taxGroup?: string;
+  taxGroup: string;
 }
 
 export interface PricingAndRates {
@@ -44,7 +45,7 @@ export interface GeneralSettings {
 export interface Categorization {
   group: string;
   subGroup: string;
-  vendor: string;
+  vendor: string  | IVendor;
   brand: string;
 }
 

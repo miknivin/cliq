@@ -1,16 +1,11 @@
-import mongoose from 'mongoose';
 import { ProductFormState } from '@/app/redux/slices/masters/productFormSlice';
-import Tax from '../models/masters/Tax';
-import UOM from '../models/masters/Uom';
-import Category from '../models/masters/Category';
-import Vendor from '../models/masters/Vendor';
 
 interface ValidationError {
   field: string;
   message: string;
 }
 
-export const validateProductForm = async (data: ProductFormState): Promise<ValidationError[]> => {
+export const validateProductFormFrontend = (data: ProductFormState): ValidationError[] => {
   const errors: ValidationError[] = [];
 
   if (!data.basicProductInfo.code.trim()) {
@@ -19,15 +14,8 @@ export const validateProductForm = async (data: ProductFormState): Promise<Valid
   if (!data.basicProductInfo.name.trim()) {
     errors.push({ field: 'basicProductInfo.name', message: 'Product name is required' });
   }
-  if (data.basicProductInfo.taxGroup) {
-    if (!mongoose.isValidObjectId(data.basicProductInfo.taxGroup)) {
-      errors.push({ field: 'basicProductInfo.taxGroup', message: 'Tax group must be a valid ObjectId' });
-    } else {
-      const tax = await Tax.findById(data.basicProductInfo.taxGroup);
-      if (!tax || tax.status !== 'Active') {
-        errors.push({ field: 'basicProductInfo.taxGroup', message: 'Tax group must reference an active Tax' });
-      }
-    }
+  if (data.basicProductInfo.taxGroup && !/^[0-9a-fA-F]{24}$/.test(data.basicProductInfo.taxGroup)) {
+    errors.push({ field: 'basicProductInfo.taxGroup', message: 'Tax group must be a valid ID' });
   }
 
   if (data.pricingAndRates.profitPercentage < 0) {
@@ -43,13 +31,8 @@ export const validateProductForm = async (data: ProductFormState): Promise<Valid
   const uomFields: (keyof typeof data.stockAndMeasurement)[] = ['base', 'purchase', 'sales', 'stock'];
   for (const field of uomFields) {
     const value = data.stockAndMeasurement[field];
-    if (!value || !mongoose.isValidObjectId(value)) {
-      errors.push({ field: `stockAndMeasurement.${field}`, message: `${field} unit must be a valid ObjectId` });
-    } else {
-      const uom = await UOM.findById(value);
-      if (!uom || uom.status !== 'Active') {
-        errors.push({ field: `stockAndMeasurement.${field}`, message: `${field} unit must reference an active UOM` });
-      }
+    if (!value || !/^[0-9a-fA-F]{24}$/.test(String(value))) {
+      errors.push({ field: `stockAndMeasurement.${field}`, message: `${field} unit is required` });
     }
   }
   if (data.stockAndMeasurement.openingStock < 0) {
@@ -72,24 +55,11 @@ export const validateProductForm = async (data: ProductFormState): Promise<Valid
     errors.push({ field: 'productProperties.generalSettings.expiry', message: 'Expiry must be non-negative' });
   }
 
-  const categoryFields: (keyof typeof data.productProperties.categorization)[] = ['group', 'subGroup'];
+  const categoryFields: (keyof typeof data.productProperties.categorization)[] = ['group', 'subGroup', 'vendor'];
   for (const field of categoryFields) {
     const value = data.productProperties.categorization[field];
-    if (!value || !mongoose.isValidObjectId(value)) {
-      errors.push({ field: `productProperties.categorization.${field}`, message: `${field} must be a valid ObjectId` });
-    } else {
-      const category = await Category.findById(value);
-      if (!category || category.status !== 'Active') {
-        errors.push({ field: `productProperties.categorization.${field}`, message: `${field} must reference an active Category` });
-      }
-    }
-  }
-  if (!data.productProperties.categorization.vendor || !mongoose.isValidObjectId(data.productProperties.categorization.vendor)) {
-    errors.push({ field: 'productProperties.categorization.vendor', message: 'Vendor must be a valid ObjectId' });
-  } else {
-    const vendor = await Vendor.findById(data.productProperties.categorization.vendor);
-    if (!vendor || vendor.status !== 'Active') {
-      errors.push({ field: 'productProperties.categorization.vendor', message: 'Vendor must reference an active Vendor' });
+    if (!value || !/^[0-9a-fA-F]{24}$/.test(value)) {
+      errors.push({ field: `productProperties.categorization.${field}`, message: `${field} is required` });
     }
   }
   if (!data.productProperties.categorization.brand.trim()) {

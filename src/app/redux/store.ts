@@ -5,6 +5,7 @@ import { currencyApi } from "./api/masters/currencyApi";
 import { uomApi } from "./api/masters/uomApi";
 import { categoryApi } from "./api/masters/categoryApi";
 import { productApi } from "./api/masters/productApi";
+import { taxApi } from "./api/masters/taxApi";
 
 
 const store = configureStore({
@@ -15,7 +16,8 @@ const store = configureStore({
       currencyApi.middleware,
       uomApi.middleware,
       categoryApi.middleware,
-      productApi.middleware
+      productApi.middleware,
+      taxApi.middleware
     ),
 });
 

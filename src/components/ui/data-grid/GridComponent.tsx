@@ -2,13 +2,16 @@
 import React, { useState, useCallback, useRef } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faChevronDown, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { Product } from "@/app/redux/api/masters/productApi";
+import { IUOMResponse } from "@/app/redux/api/masters/uomApi";
+import Autocomplete from "../auto-complete/CustomAutocomplete";
 
 // Define column configuration
 export interface Column {
   field: string;
   headerName: string;
   defaultWidth: number;
-  inputType?: "text" | "number"; // Optional input type for cells
+  inputType?: "text" | "number" | "autocomplete";
 }
 
 // Define props for the reusable GridComponent
@@ -17,6 +20,10 @@ interface GridComponentProps<T> {
   rows: T[];
   onRowUpdate: (id: number, field: keyof T, value: string) => void;
   onRowDelete: (id: number) => void;
+  products?: Product[];
+  uoms?: IUOMResponse[];
+  isProductsLoading?: boolean;
+  isUOMsLoading?: boolean;
 }
 
 export default function GridComponent<T extends { id: number }>({
@@ -24,6 +31,10 @@ export default function GridComponent<T extends { id: number }>({
   rows,
   onRowUpdate,
   onRowDelete,
+  products = [],
+  uoms = [],
+  isProductsLoading = false,
+  isUOMsLoading = false,
 }: GridComponentProps<T>) {
   const [sortConfig, setSortConfig] = useState<{ field: keyof T | null; direction: "asc" | "desc" | null }>({
     field: null,
@@ -116,80 +127,55 @@ export default function GridComponent<T extends { id: number }>({
     }, {} as { [key: string]: string });
   }, [rows, columns]);
 
+  // Handle no match click for autocomplete (placeholder)
+  const handleNoMatchClick = useCallback((field: string) => {
+    if (field === "particulars") {
+      console.log("No product match found. Trigger create product modal or action.");
+    } else if (field === "uom") {
+      console.log("No UOM match found. Trigger create UOM modal or action.");
+    }
+  }, []);
+
   // Generate grid template columns
   const gridTemplateColumns = visibleColumns
     .map((field) => `${columnWidths[field] || columns.find((col) => col.field === field)!.defaultWidth}px`)
     .join(" ");
 
   return (
-    <> <div className="relative mb-4 flex justify-end">
-          <button
-            className="flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
-            onClick={() => setIsColumnMenuOpen(!isColumnMenuOpen)}
-          >
-            Columns <FontAwesomeIcon icon={faChevronDown} className="ml-2 h-4 w-4" />
-          </button>
-          {isColumnMenuOpen && (
-            <div className="absolute z-50 mt-2 w-48 rounded-md bg-white shadow-lg dark:bg-gray-800 max-h-32 overflow-auto">
-              {columns
-                .filter((col) => col.field !== "actions")
-                .map((col) => (
-                  <label
-                    key={col.field}
-                    className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={visibleColumns.includes(col.field)}
-                      onChange={() => handleColumnToggle(col.field)}
-                      className="mr-2 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    {col.headerName}
-                  </label>
-                ))}
-            </div>
-          )}
-        </div>
-    <div  className="w-full overflow-x-auto h-auto">
-       
-      <div  style={{ maxWidth:"1080px"}} className="">
-        {/* Column Selection Dropdown */}
-
-        {/* Grid Header */}
-        <div
-          className="grid "
-          style={{ gridTemplateColumns }}
+    <>
+      <div className="relative mb-4 flex justify-end">
+        <button
+          className="flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+          onClick={() => setIsColumnMenuOpen(!isColumnMenuOpen)}
         >
-          {columns
-            .filter((col) => visibleColumns.includes(col.field))
-            .map((col) => (
-              <div
-                key={col.field}
-                className="relative flex items-center p-2 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border"
-              >
-                <span
-                  className={col.field !== "actions" ? "cursor-pointer flex-1" : "flex-1"}
-                  onClick={col.field !== "actions" ? () => handleSort(col.field as keyof T) : undefined}
+          Columns <FontAwesomeIcon icon={faChevronDown} className="ml-2 h-4 w-4" />
+        </button>
+        {isColumnMenuOpen && (
+          <div className="absolute z-50 mt-2 w-48 rounded-md bg-white shadow-lg dark:bg-gray-800 max-h-32 overflow-auto">
+            {columns
+              .filter((col) => col.field !== "actions")
+              .map((col) => (
+                <label
+                  key={col.field}
+                  className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                 >
-                  {col.headerName}
-                  {sortConfig.field === col.field && sortConfig.direction && (
-                    <span className="ml-1">{sortConfig.direction === "asc" ? "↑" : "↓"}</span>
-                  )}
-                </span>
-                {col.field !== "actions" && (
-                  <div
-                    className="absolute right-0 top-0 h-full w-1 cursor-col-resize  hover:bg-blue-500"
-                    onMouseDown={(e) => handleMouseDown(e, col.field)}
+                  <input
+                    type="checkbox"
+                    checked={visibleColumns.includes(col.field)}
+                    onChange={() => handleColumnToggle(col.field)}
+                    className="mr-2 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
-                )}
-              </div>
-            ))}
-        </div>
-        {/* Grid Rows */}
-        {sortedRows().map((row) => (
+                  {col.headerName}
+                </label>
+              ))}
+          </div>
+        )}
+      </div>
+      <div className="w-full overflow-x-auto h-auto border border-collapse">
+        <div style={{ maxWidth: "1080px" }} className="">
+          {/* Grid Header */}
           <div
-            key={row.id}
-            className="grid border-t border-gray-200 dark:border-gray-700 "
+            className="grid"
             style={{ gridTemplateColumns }}
           >
             {columns
@@ -197,49 +183,108 @@ export default function GridComponent<T extends { id: number }>({
               .map((col) => (
                 <div
                   key={col.field}
-                  className="p-1 flex items-center border"
+                  className="relative flex items-center p-2 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border"
                 >
-                  {col.field === "actions" ? (
-                    <button
-                      className="text-red-600 hover:text-red-800 disabled:text-gray-400"
-                      onClick={() => onRowDelete(row.id)}
-                      disabled={rows.length <= 1}
-                    >
-                      <FontAwesomeIcon icon={faTrash} className="h-5 w-5" />
-                    </button>
-                  ) : (
-                    <input
-                      type={col.inputType || "text"}
-                      value={row[col.field as keyof T] as string}
-                      onChange={(e) => onRowUpdate(row.id, col.field as keyof T, e.target.value)}
-                      className="w-full border-none bg-transparent p-1 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  <span
+                    className={col.field !== "actions" ? "cursor-pointer flex-1" : "flex-1"}
+                    onClick={col.field !== "actions" ? () => handleSort(col.field as keyof T) : undefined}
+                  >
+                    {col.headerName}
+                    {sortConfig.field === col.field && sortConfig.direction && (
+                      <span className="ml-1">{sortConfig.direction === "asc" ? "↑" : "↓"}</span>
+                    )}
+                  </span>
+                  {col.field !== "actions" && (
+                    <div
+                      className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-blue-500"
+                      onMouseDown={(e) => handleMouseDown(e, col.field)}
                     />
                   )}
                 </div>
               ))}
           </div>
-        ))}
-        {/* Grid Footer */}
-        <div
-          className="grid  border-t border-gray-200 dark:border-gray-700"
-          style={{ gridTemplateColumns }}
-        >
-          {columns
-            .filter((col) => visibleColumns.includes(col.field))
-            .map((col) => (
-              <div
-                key={col.field}
-                className="p-2 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700"
-              >
-                {col.field !== "actions" && calculateTotals()[col.field]
-                  ? `${calculateTotals()[col.field]}`
-                  : ""}
-              </div>
-            ))}
+          {/* Grid Rows */}
+          {sortedRows().map((row) => (
+            <div
+              key={row.id}
+              className="grid border-t border-gray-200 dark:border-gray-700"
+              style={{ gridTemplateColumns }}
+            >
+              {columns
+                .filter((col) => visibleColumns.includes(col.field))
+                .map((col) => (
+                  <div
+                    key={col.field}
+                    className="p-1 flex items-center border"
+                  >
+                    {col.field === "actions" ? (
+                      <button
+                        className="text-red-600 hover:text-red-800 disabled:text-red-300"
+                        onClick={() => onRowDelete(row.id)}
+                        disabled={rows.length <= 1}
+                      >
+                        <FontAwesomeIcon icon={faTrash} className="h-5 w-5 " />
+                      </button>
+                    ) : col.inputType === "autocomplete" && col.field === "particulars" ? (
+                      <Autocomplete
+                        data={products.map((product) => product.basicProductInfo.name)}
+                        value={
+                          products.find((p) => p._id === row[col.field as keyof T])?.basicProductInfo.name ||
+                          (row[col.field as keyof T] as string)
+                        }
+                        onChange={(value) => {
+                          const selectedProduct = products.find((p) => p.basicProductInfo.name === value);
+                          onRowUpdate(row.id, col.field as keyof T, selectedProduct ? selectedProduct._id : value);
+                        }}
+                        onNoMatchClick={() => handleNoMatchClick("particulars")}
+                        isLoading={isProductsLoading}
+                      />
+                    ) : col.inputType === "autocomplete" && col.field === "uom" ? (
+                      <Autocomplete
+                        data={uoms.map((uom) => uom.name)}
+                        value={
+                          uoms.find((u) => u._id === row[col.field as keyof T])?.name ||
+                          (row[col.field as keyof T] as string)
+                        }
+                        onChange={(value) => {
+                          const selectedUOM = uoms.find((u) => u.name === value);
+                          onRowUpdate(row.id, col.field as keyof T, selectedUOM ? selectedUOM._id : value);
+                        }}
+                        onNoMatchClick={() => handleNoMatchClick("uom")}
+                        isLoading={isUOMsLoading}
+                      />
+                    ) : (
+                      <input
+                        type={col.inputType || "text"}
+                        value={row[col.field as keyof T] as string}
+                        onChange={(e) => onRowUpdate(row.id, col.field as keyof T, e.target.value)}
+                        className="w-full border-none bg-transparent p-1 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    )}
+                  </div>
+                ))}
+            </div>
+          ))}
+          {/* Grid Footer */}
+          <div
+            className="grid border-t border-gray-200 dark:border-gray-700"
+            style={{ gridTemplateColumns }}
+          >
+            {columns
+              .filter((col) => visibleColumns.includes(col.field))
+              .map((col) => (
+                <div
+                  key={col.field}
+                  className="p-2 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700"
+                >
+                  {col.field !== "actions" && calculateTotals()[col.field]
+                    ? `${calculateTotals()[col.field]}`
+                    : ""}
+                </div>
+              ))}
+          </div>
         </div>
       </div>
-    </div>
-        </>
-
+    </>
   );
 }

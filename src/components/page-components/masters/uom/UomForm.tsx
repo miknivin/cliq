@@ -26,7 +26,6 @@ export default function UOMForm({ onClose }: UOMFormProps) {
       onClose();
     } catch (err) {
       console.error('Error creating UOM:', err);
-      // Error is handled via the error state from the mutation
     }
   };
 

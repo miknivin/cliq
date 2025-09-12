@@ -48,7 +48,7 @@ const masters = [
   {
     title: "Tax Master",
     desc: "Configure tax types, rates, and applicability.",
-    href: "#",
+    href: "tax",
   },
   {
     title: "Price / Discount Master",

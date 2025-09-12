@@ -11,10 +11,10 @@ import StockAndMeasurementForm from "./sections/StockAndMeasurementForm";
 import GeneralSettingsForm from "./sections/GeneralSettingsForm";
 import CategorizationForm from "./sections/Categorization";
 import AdditionalDetailsForm from "./sections/AdditionalDetailsForm";
-import { validateProductForm } from "@/lib/validators/productValidation";
 import { useCreateProductMutation } from "@/app/redux/api/masters/productApi";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
+import { validateProductFormFrontend } from './../../../../../lib/validators/productValidationFrontend';
 
 const ProductForm = () => {
   const dispatch = useDispatch();
@@ -86,10 +86,10 @@ const ProductForm = () => {
     setErrors([]);
 
     // Client-side validation
-    const validationErrors = validateProductForm(formData);
-    if (validationErrors.length > 0) {
+    const validationErrors = validateProductFormFrontend(formData);
+    if ((validationErrors).length > 0) {
       setErrors(validationErrors);
-      validationErrors.forEach((err) =>
+      (validationErrors).forEach((err) =>
         toast.error(`${err.field || 'Error'}: ${err.message}`, { position: "top-right" })
       );
       return;
@@ -104,6 +104,8 @@ const ProductForm = () => {
   };
 
   const handleCancel = () => {
+    console.log(formData);
+    
     dispatch(resetForm());
     setErrors([]);
     toast.info("Form reset successfully", { position: "top-right" });
@@ -148,8 +150,7 @@ const ProductForm = () => {
             onCreateVendor={() => console.log("Vendor creation requested")}
             onCreateCategory={() => console.log("create requested")}
             data={formData.productProperties.categorization}
-            handleChange={handleChange}
-          />
+            handleChange={handleChange} errors={[]}          />
           <AdditionalDetailsForm
             data={formData.additionalDetails}
             handleChange={handleChange}

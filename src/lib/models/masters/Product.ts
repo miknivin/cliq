@@ -1,11 +1,10 @@
-
 import mongoose, { Schema, Document, models } from 'mongoose';
 
 interface BasicProductInfo {
   code: string;
   name: string;
   otherLanguage?: string;
-  taxGroup?: string;
+  taxGroup?: mongoose.Types.ObjectId | string;
 }
 
 interface PricingAndRates {
@@ -19,10 +18,10 @@ interface PricingAndRates {
 }
 
 interface StockAndMeasurement {
-  base: string;
-  purchase: string;
-  sales: string;
-  stock: string;
+  base: mongoose.Types.ObjectId | string;
+  purchase: mongoose.Types.ObjectId | string;
+  sales: mongoose.Types.ObjectId | string;
+  stock: mongoose.Types.ObjectId | string;
   openingStock: number;
   minimumStock: number;
   maximumStock: number;
@@ -42,9 +41,9 @@ interface ProductProperties {
     serialNo: boolean;
   };
   categorization: {
-    group: string;
-    subGroup: string;
-    vendor: string;
+    group: mongoose.Types.ObjectId | string;
+    subGroup: mongoose.Types.ObjectId | string;
+    vendor: mongoose.Types.ObjectId | string;
     brand: string;
   };
 }
@@ -76,7 +75,7 @@ const productSchema = new Schema<ProductDoc>({
     code: { type: String, required: true },
     name: { type: String, required: true },
     otherLanguage: { type: String },
-    taxGroup: { type: String },
+    taxGroup: { type: Schema.Types.ObjectId, ref: 'Tax' },
   },
   pricingAndRates: {
     profitPercentage: { type: Number, required: true, min: 0 },
@@ -88,31 +87,31 @@ const productSchema = new Schema<ProductDoc>({
     wRate: { type: Number, required: true, min: 0 },
   },
   stockAndMeasurement: {
-    base: { type: String, required: true },
-    purchase: { type: String, required: true },
-    sales: { type: String, required: true },
-    stock: { type: String, required: true },
+    base: { type: Schema.Types.ObjectId, ref: 'UOM', required: true },
+    purchase: { type: Schema.Types.ObjectId, ref: 'UOM', required: true },
+    sales: { type: Schema.Types.ObjectId, ref: 'UOM', required: true },
+    stock: { type: Schema.Types.ObjectId, ref: 'UOM', required: true },
     openingStock: { type: Number, required: true, min: 0 },
     minimumStock: { type: Number, required: true, min: 0 },
     maximumStock: { type: Number, required: true, min: 0 },
     reOrderLevel: { type: Number, required: true, min: 0 },
-    reOrderQty: { type: Number,min:0 },
+    reOrderQty: { type: Number, min: 0 },
   },
   productProperties: {
     generalSettings: {
-      inactive: { type: Boolean, required: true },
-      lessProfit: { type: Boolean, required: true },
-      counterItem: { type: Boolean, required: true },
-      autoEntry: { type: Boolean, required: true },
-      hideFromDevice: { type: Boolean, required: true },
-      expiry: { type: Number, required: true, min: 0 },
-      taxInclusive: { type: Boolean, required: true },
-      serialNo: { type: Boolean, required: true },
+      inactive: { type: Boolean, required: true, default: false },
+      lessProfit: { type: Boolean, required: true, default: false },
+      counterItem: { type: Boolean, required: true, default: false },
+      autoEntry: { type: Boolean, required: true, default: false },
+      hideFromDevice: { type: Boolean, required: true, default: false },
+      expiry: { type: Number, required: true, min: 0, default: 0 },
+      taxInclusive: { type: Boolean, required: true, default: false },
+      serialNo: { type: Boolean, required: true, default: false },
     },
     categorization: {
-      group: { type: String, required: true },
-      subGroup: { type: String, required: true },
-      vendor: { type: String, required: true },
+      group: { type: Schema.Types.ObjectId, ref: 'Category', required: true },
+      subGroup: { type: Schema.Types.ObjectId, ref: 'Category', required: true },
+      vendor: { type: Schema.Types.ObjectId, ref: 'Vendor', required: true },
       brand: { type: String, required: true },
     },
   },

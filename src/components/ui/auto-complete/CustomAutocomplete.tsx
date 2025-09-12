@@ -35,10 +35,10 @@ const Autocomplete: React.FC<AutocompleteProps> = ({ data, value, onChange, onNo
   };
 
   // Handle item selection
-  const handleItemClick = (item: string) => {
-    onChange(item);
-    setIsOpen(false);
-  };
+const handleItemClick = (item: string) => {
+  setIsOpen(false);
+  setTimeout(() => onChange(item), 0); // micro-delay
+};
 
   // Handle click outside to close dropdown
   useEffect(() => {

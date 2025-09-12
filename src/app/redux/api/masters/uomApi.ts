@@ -13,7 +13,7 @@ interface UpdateUOMInput {
   status: 'Active' | 'Inactive';
 }
 
-interface IUOMResponse {
+export interface IUOMResponse {
   _id: string;
   code: string;
   name: string;
