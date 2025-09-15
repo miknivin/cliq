@@ -87,6 +87,7 @@ export async function GET() {
     await dbConnect();
     const products = await Product.find()
       .populate('productProperties.categorization.vendor')
+      .populate('basicProductInfo.taxGroup')
       .lean();
     return NextResponse.json({ success: true, data: products }, { status: 200 });
   } catch (error: any) {

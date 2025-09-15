@@ -1,9 +1,32 @@
-// File: components/page-components/purchaseOrder/FormGrid.tsx
 "use client";
 import { RootState } from '@/app/redux/rootReducer';
 import { updateField, initialState } from '@/app/redux/slices/purchase-order/purchaseOrderSlice';
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+
+// Utility function to convert ISO string to YYYY-MM-DD for input type="date"
+const formatDateForInput = (isoString: string): string => {
+  if (!isoString || isNaN(new Date(isoString).getTime())) {
+    return ''; // Return empty string for invalid or missing dates
+  }
+  return isoString.split('T')[0]; // Extract YYYY-MM-DD from ISO string
+};
+
+// Utility function to convert YYYY-MM-DD to ISO string for Redux state
+const toISOString = (dateString: string): string => {
+  if (!dateString) {
+    return ''; // Handle empty input
+  }
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return ''; // Handle invalid date
+    }
+    return date.toISOString(); // Convert to ISO string
+  } catch {
+    return ''; // Fallback for invalid dates
+  }
+};
 
 const FormGrid = () => {
   const dispatch = useDispatch();
@@ -14,9 +37,17 @@ const FormGrid = () => {
   const handleFieldChange = (
     group: keyof typeof initialState,
     field: string,
-    value: string | boolean
+    value: string | boolean | number
   ) => {
-    dispatch(updateField({ group, field, value }));
+    // Convert date inputs to ISO strings
+    if (
+      group === 'orderDetails' &&
+      ['date', 'dueDate', 'deliveryDate'].includes(field)
+    ) {
+      dispatch(updateField({ group, field, value: toISOString(value as string) }));
+    } else {
+      dispatch(updateField({ group, field, value }));
+    }
   };
 
   return (
@@ -59,7 +90,7 @@ const FormGrid = () => {
               <input
                 type="date"
                 id="date"
-                value={orderDetails.date}
+                value={formatDateForInput(orderDetails.date)}
                 onChange={(e) => handleFieldChange('orderDetails', 'date', e.target.value)}
                 className="block w-full p-2 text-gray-900 border border-gray-300 rounded-lg bg-gray-50 text-xs focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
               />
@@ -71,7 +102,7 @@ const FormGrid = () => {
               <input
                 type="date"
                 id="due-date"
-                value={orderDetails.dueDate}
+                value={formatDateForInput(orderDetails.dueDate)}
                 onChange={(e) => handleFieldChange('orderDetails', 'dueDate', e.target.value)}
                 className="block w-full p-2 text-gray-900 border border-gray-300 rounded-lg bg-gray-50 text-xs focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
               />
@@ -83,7 +114,7 @@ const FormGrid = () => {
               <input
                 type="date"
                 id="delivery-date"
-                value={orderDetails.deliveryDate}
+                value={formatDateForInput(orderDetails.deliveryDate)}
                 onChange={(e) => handleFieldChange('orderDetails', 'deliveryDate', e.target.value)}
                 className="block w-full p-2 text-gray-900 border border-gray-300 rounded-lg bg-gray-50 text-xs focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
               />
@@ -108,17 +139,6 @@ const FormGrid = () => {
               />
             </div>
             <div>
-              <label htmlFor="address" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                Address
-              </label>
-              <textarea
-                id="address"
-                value={vendorInformation.address}
-                onChange={(e) => handleFieldChange('vendorInformation', 'address', e.target.value)}
-                className="block w-full p-2 text-gray-900 border border-gray-300 rounded-lg bg-gray-50 text-xs focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-              />
-            </div>
-            <div>
               <label htmlFor="attention" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
                 Attention
               </label>
@@ -130,6 +150,18 @@ const FormGrid = () => {
                 className="block w-full p-2 text-gray-900 border border-gray-300 rounded-lg bg-gray-50 text-xs focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
               />
             </div>
+            <div className="col-span-2">
+              <label htmlFor="address" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                Address
+              </label>
+              <textarea
+                id="address"
+                value={vendorInformation.address}
+                onChange={(e) => handleFieldChange('vendorInformation', 'address', e.target.value)}
+                className="block w-full p-2 text-gray-900 border border-gray-300 rounded-lg bg-gray-50 text-xs focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+              />
+            </div>
+            
           </div>
         </div>
 
@@ -159,7 +191,7 @@ const FormGrid = () => {
                 type="text"
                 id="credit-limit"
                 value={financialDetails.creditLimit}
-                onChange={(e) => handleFieldChange('financialDetails', 'creditLimit', e.target.value)}
+                onChange={(e) => handleFieldChange('financialDetails', 'creditLimit', parseFloat(e.target.value) || 0)}
                 className="block w-full p-2 text-gray-900 border border-gray-300 rounded-lg bg-gray-50 text-xs focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
               />
             </div>
@@ -185,7 +217,7 @@ const FormGrid = () => {
                 type="text"
                 id="balance"
                 value={financialDetails.balance}
-                onChange={(e) => handleFieldChange('financialDetails', 'balance', e.target.value)}
+                onChange={(e) => handleFieldChange('financialDetails', 'balance', parseFloat(e.target.value) || 0)}
                 className="block w-full p-2 text-gray-900 border border-gray-300 rounded-lg bg-gray-50 text-xs focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
               />
             </div>

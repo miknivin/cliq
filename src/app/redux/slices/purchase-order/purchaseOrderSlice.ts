@@ -1,7 +1,8 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { Types } from 'mongoose';
 
 interface PurchaseOrderItem {
-  id: number;
+  id: number; // Temporary ID for frontend
   sno: string;
   code: string;
   ubc: string;
@@ -9,16 +10,16 @@ interface PurchaseOrderItem {
   remark: string;
   warehouse: string;
   uom: string; // ObjectId as string for UOM reference
-  frate: string;
-  qty: string;
-  rate: string;
-  foc: string;
-  gross: string;
-  discountPercent: string;
-  discount: string;
-  taxPercent: string;
-  tax: string;
-  total: string;
+  frate: number;
+  qty: number;
+  rate: number;
+  foc: number;
+  gross: number;
+  discountPercent: number;
+  discount: number;
+  taxPercent: number;
+  tax: number;
+  total: number;
 }
 
 export interface PurchaseOrderState {
@@ -26,9 +27,9 @@ export interface PurchaseOrderState {
   orderDetails: {
     voucherType: string;
     no: string;
-    date: string;
-    dueDate: string;
-    deliveryDate: string;
+    date: string; // Changed to string (ISO format)
+    dueDate: string; // Changed to string (ISO format)
+    deliveryDate: string; // Changed to string (ISO format)
   };
   vendorInformation: {
     vendor: string; // ObjectId as string for Vendor reference
@@ -37,9 +38,9 @@ export interface PurchaseOrderState {
   };
   financialDetails: {
     paymentMode: string;
-    creditLimit: string;
+    creditLimit: number;
     currency: string;
-    balance: string;
+    balance: number;
   };
   productInformation: {
     vendorProducts: string;
@@ -51,34 +52,34 @@ export interface PurchaseOrderState {
   footer: {
     notes: string;
     taxable: boolean;
-    total: string;
-    discount: string;
-    addition: string;
-    advance: string;
-    netTotal: string;
+    total: number;
+    discount: number;
+    addition: number;
+    advance: number;
+    netTotal: number;
   };
   isSubmitted: boolean;
 }
 
-const initialState: PurchaseOrderState = {
+export const initialState: PurchaseOrderState = {
   name: 'untitled',
   orderDetails: {
     voucherType: 'PH',
     no: '',
-    date: '2025-08-14',
-    dueDate: '2025-08-14',
-    deliveryDate: '2025-08-14',
+    date: new Date('2025-08-14').toISOString(), // e.g., "2025-08-14T00:00:00.000Z"
+    dueDate: new Date('2025-08-14').toISOString(),
+    deliveryDate: new Date('2025-08-14').toISOString(),
   },
   vendorInformation: {
-    vendor: '', // Stores Vendor._id
+    vendor: '',
     address: '',
     attention: '',
   },
   financialDetails: {
     paymentMode: 'Cash',
-    creditLimit: '',
+    creditLimit: 0,
     currency: 'none',
-    balance: '',
+    balance: 0,
   },
   productInformation: {
     vendorProducts: 'Re-Order Level',
@@ -96,26 +97,26 @@ const initialState: PurchaseOrderState = {
       remark: '',
       warehouse: '',
       uom: '',
-      frate: '',
-      qty: '',
-      rate: '',
-      foc: '',
-      gross: '',
-      discountPercent: '',
-      discount: '',
-      taxPercent: '',
-      tax: '',
-      total: '',
+      frate: 0,
+      qty: 0,
+      rate: 0,
+      foc: 0,
+      gross: 0,
+      discountPercent: 0,
+      discount: 0,
+      taxPercent: 0,
+      tax: 0,
+      total: 0,
     },
   ],
   footer: {
     notes: '',
     taxable: false,
-    total: '',
-    discount: '',
-    addition: '',
-    advance: '',
-    netTotal: '',
+    total: 0,
+    discount: 0,
+    addition: 0,
+    advance: 0,
+    netTotal: 0,
   },
   isSubmitted: false,
 };
@@ -129,7 +130,7 @@ const purchaseOrderSlice = createSlice({
       action: PayloadAction<{
         group: keyof PurchaseOrderState | 'name';
         field?: string;
-        value: string | boolean;
+        value: string | number | boolean | Date;
       }>
     ) => {
       const { group, field, value } = action.payload;
@@ -137,17 +138,81 @@ const purchaseOrderSlice = createSlice({
         state.name = value as string;
       } else if (group !== 'items') {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (state[group] as any)[field!] = value;
+        const target = state[group] as any;
+        if (field) {
+          // Handle Date fields
+          if (
+            group === 'orderDetails' &&
+            ['date', 'dueDate', 'deliveryDate'].includes(field)
+          ) {
+            // Validate and convert to ISO string
+            if (!value || (typeof value !== 'string' && !(value instanceof Date))) {
+              target[field] = ''; // Reject invalid values
+            } else {
+              try {
+                target[field] =
+                  value instanceof Date
+                    ? value.toISOString()
+                    : new Date(value as string).toISOString();
+              // eslint-disable-next-line @typescript-eslint/no-unused-vars
+              } catch (error) {
+                target[field] = ''; // Fallback to empty string for invalid dates
+              }
+            }
+          }
+          // Handle number fields
+          else if (
+            group === 'financialDetails' &&
+            ['creditLimit', 'balance'].includes(field)
+          ) {
+            target[field] = typeof value === 'number' ? value : parseFloat(value as string) || 0;
+          }
+          // Handle footer number fields
+          else if (
+            group === 'footer' &&
+            ['total', 'discount', 'addition', 'advance', 'netTotal'].includes(field)
+          ) {
+            target[field] = typeof value === 'number' ? value : parseFloat(value as string) || 0;
+          }
+          // Handle string and boolean fields
+          else {
+            target[field] = value;
+          }
+        }
       }
     },
     updateItem: (
       state,
-      action: PayloadAction<{ id: number; field: keyof PurchaseOrderItem; value: string }>
+      action: PayloadAction<{
+        id: number;
+        field: keyof PurchaseOrderItem;
+        value: string | number;
+      }>
     ) => {
       const { id, field, value } = action.payload;
       const item = state.items.find((item) => item.id === id);
       if (item) {
-        (item[field] as string) = value;
+        // Handle number fields
+        if (
+          [
+            'frate',
+            'qty',
+            'rate',
+            'foc',
+            'gross',
+            'discountPercent',
+            'discount',
+            'taxPercent',
+            'tax',
+            'total',
+          ].includes(field)
+        ) {
+          (item[field] as number) = typeof value === 'number' ? value : parseFloat(value as string) || 0;
+        }
+        // Handle string fields
+        else {
+          (item[field] as string) = value as string;
+        }
       }
     },
     addItem: (state) => {
@@ -161,16 +226,16 @@ const purchaseOrderSlice = createSlice({
         remark: '',
         warehouse: '',
         uom: '',
-        frate: '',
-        qty: '',
-        rate: '',
-        foc: '',
-        gross: '',
-        discountPercent: '',
-        discount: '',
-        taxPercent: '',
-        tax: '',
-        total: '',
+        frate: 0,
+        qty: 0,
+        rate: 0,
+        foc: 0,
+        gross: 0,
+        discountPercent: 0,
+        discount: 0,
+        taxPercent: 0,
+        tax: 0,
+        total: 0,
       });
     },
     removeItem: (state, action: PayloadAction<number>) => {
@@ -183,24 +248,70 @@ const purchaseOrderSlice = createSlice({
     },
     resetForm: () => initialState,
     submitForm: (state) => {
+      console.log(state.items,'state');
+      
+      // Validate required fields
       for (const item of state.items) {
-        if (!item.particulars || !item.uom) {
-          throw new Error('Particulars and UOM are required for all items');
+        if (!item.particulars || !Types.ObjectId.isValid(item.particulars)) {
+          throw new Error('Valid Product ID is required for all items');
+        }
+        if (!item.uom || !Types.ObjectId.isValid(item.uom)) {
+          throw new Error('Valid UOM ID is required for all items');
         }
       }
-      if (!state.vendorInformation.vendor) {
-        throw new Error('Vendor is required in vendorInformation');
+      if (!state.vendorInformation.vendor || !Types.ObjectId.isValid(state.vendorInformation.vendor)) {
+        throw new Error('Valid Vendor ID is required');
       }
-      state.isSubmitted = true;
-      console.log('Form Submitted:', {
+      if (!state.orderDetails.no) {
+        throw new Error('Order number is required');
+      }
+      // Validate dates
+      if (
+        !state.orderDetails.date ||
+        isNaN(new Date(state.orderDetails.date).getTime()) ||
+        !state.orderDetails.dueDate ||
+        isNaN(new Date(state.orderDetails.dueDate).getTime()) ||
+        !state.orderDetails.deliveryDate ||
+        isNaN(new Date(state.orderDetails.deliveryDate).getTime())
+      ) {
+        throw new Error('Invalid date format in order details');
+      }
+
+      // Convert items for backend
+      const convertedItems = state.items.map((item) => ({
+        ...item,
+        particulars: new Types.ObjectId(item.particulars),
+        uom: new Types.ObjectId(item.uom),
+      }));
+
+      // Prepare data for backend
+      const payload = {
         name: state.name,
-        orderDetails: state.orderDetails,
-        vendorInformation: state.vendorInformation,
-        financialDetails: state.financialDetails,
+        orderDetails: {
+          ...state.orderDetails,
+          date: state.orderDetails.date, // Already an ISO string
+          dueDate: state.orderDetails.dueDate, // Already an ISO string
+          deliveryDate: state.orderDetails.deliveryDate, // Already an ISO string
+        },
+        vendorInformation: {
+          ...state.vendorInformation,
+          vendor: new Types.ObjectId(state.vendorInformation.vendor),
+        },
+        financialDetails: {
+          ...state.financialDetails,
+        },
         productInformation: state.productInformation,
-        items: state.items,
-        footer: state.footer,
-      });
+        items: convertedItems,
+        footer: {
+          ...state.footer,
+        },
+      };
+
+      // Log payload (or send to backend)
+      console.log('Form Submitted:', payload);
+
+      // Mark form as submitted
+      state.isSubmitted = true;
     },
   },
 });

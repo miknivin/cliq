@@ -2,11 +2,14 @@
 import { IVendor } from '@/lib/models/masters/Vendor';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
+
+
+
 export interface BasicProductInfo {
   code: string;
   name: string;
   otherLanguage?: string;
-  taxGroup: string;
+  taxGroup: string ;
 }
 
 export interface PricingAndRates {
