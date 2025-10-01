@@ -1,15 +1,14 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { Types } from 'mongoose';
 
-interface PurchaseOrderItem {
-  id: number; // Temporary ID for frontend
+export interface PurchaseOrderItem {
+  id: number; 
   sno: string;
   code: string;
   ubc: string;
-  particulars: string; // ObjectId as string for Product reference
+  particulars: string; 
   remark: string;
   warehouse: string;
-  uom: string; // ObjectId as string for UOM reference
+  uom: string;
   frate: number;
   qty: number;
   rate: number;
@@ -27,7 +26,7 @@ export interface PurchaseOrderState {
   orderDetails: {
     voucherType: string;
     no: string;
-    date: string; // Changed to string (ISO format)
+    date: string;
     dueDate: string; // Changed to string (ISO format)
     deliveryDate: string; // Changed to string (ISO format)
   };
@@ -58,7 +57,7 @@ export interface PurchaseOrderState {
     advance: number;
     netTotal: number;
   };
-  isSubmitted: boolean;
+  isSubmitted?: boolean;
 }
 
 export const initialState: PurchaseOrderState = {
@@ -78,7 +77,7 @@ export const initialState: PurchaseOrderState = {
   financialDetails: {
     paymentMode: 'Cash',
     creditLimit: 0,
-    currency: 'none',
+    currency: '',
     balance: 0,
   },
   productInformation: {
@@ -90,7 +89,7 @@ export const initialState: PurchaseOrderState = {
   items: [
     {
       id: 1,
-      sno: '',
+      sno: '1',
       code: '',
       ubc: '',
       particulars: '',
@@ -98,7 +97,7 @@ export const initialState: PurchaseOrderState = {
       warehouse: '',
       uom: '',
       frate: 0,
-      qty: 0,
+      qty: 1,
       rate: 0,
       foc: 0,
       gross: 0,
@@ -219,7 +218,7 @@ const purchaseOrderSlice = createSlice({
       const newId = state.items.length + 1;
       state.items.push({
         id: newId,
-        sno: '',
+        sno: `${newId}`,
         code: '',
         ubc: '',
         particulars: '',
@@ -227,7 +226,7 @@ const purchaseOrderSlice = createSlice({
         warehouse: '',
         uom: '',
         frate: 0,
-        qty: 0,
+        qty: 1,
         rate: 0,
         foc: 0,
         gross: 0,
@@ -238,6 +237,19 @@ const purchaseOrderSlice = createSlice({
         total: 0,
       });
     },
+    updateFooterTotals: (
+      state,
+      action: PayloadAction<{
+        total: number;
+        discount: number;
+        netTotal: number;
+      }>
+    ) => {
+      const { total, discount, netTotal } = action.payload;
+      state.footer.total = total;
+      state.footer.discount = discount;
+      state.footer.netTotal = netTotal;
+    },
     removeItem: (state, action: PayloadAction<number>) => {
       state.items = state.items
         .filter((item) => item.id !== action.payload)
@@ -247,74 +259,8 @@ const purchaseOrderSlice = createSlice({
         }));
     },
     resetForm: () => initialState,
-    submitForm: (state) => {
-      console.log(state.items,'state');
-      
-      // Validate required fields
-      for (const item of state.items) {
-        if (!item.particulars || !Types.ObjectId.isValid(item.particulars)) {
-          throw new Error('Valid Product ID is required for all items');
-        }
-        if (!item.uom || !Types.ObjectId.isValid(item.uom)) {
-          throw new Error('Valid UOM ID is required for all items');
-        }
-      }
-      if (!state.vendorInformation.vendor || !Types.ObjectId.isValid(state.vendorInformation.vendor)) {
-        throw new Error('Valid Vendor ID is required');
-      }
-      if (!state.orderDetails.no) {
-        throw new Error('Order number is required');
-      }
-      // Validate dates
-      if (
-        !state.orderDetails.date ||
-        isNaN(new Date(state.orderDetails.date).getTime()) ||
-        !state.orderDetails.dueDate ||
-        isNaN(new Date(state.orderDetails.dueDate).getTime()) ||
-        !state.orderDetails.deliveryDate ||
-        isNaN(new Date(state.orderDetails.deliveryDate).getTime())
-      ) {
-        throw new Error('Invalid date format in order details');
-      }
-
-      // Convert items for backend
-      const convertedItems = state.items.map((item) => ({
-        ...item,
-        particulars: new Types.ObjectId(item.particulars),
-        uom: new Types.ObjectId(item.uom),
-      }));
-
-      // Prepare data for backend
-      const payload = {
-        name: state.name,
-        orderDetails: {
-          ...state.orderDetails,
-          date: state.orderDetails.date, // Already an ISO string
-          dueDate: state.orderDetails.dueDate, // Already an ISO string
-          deliveryDate: state.orderDetails.deliveryDate, // Already an ISO string
-        },
-        vendorInformation: {
-          ...state.vendorInformation,
-          vendor: new Types.ObjectId(state.vendorInformation.vendor),
-        },
-        financialDetails: {
-          ...state.financialDetails,
-        },
-        productInformation: state.productInformation,
-        items: convertedItems,
-        footer: {
-          ...state.footer,
-        },
-      };
-
-      // Log payload (or send to backend)
-      console.log('Form Submitted:', payload);
-
-      // Mark form as submitted
-      state.isSubmitted = true;
-    },
   },
 });
 
-export const { updateField, updateItem, addItem, removeItem, resetForm, submitForm } = purchaseOrderSlice.actions;
+export const { updateField, updateItem, addItem, removeItem, resetForm, updateFooterTotals } = purchaseOrderSlice.actions;
 export default purchaseOrderSlice.reducer;

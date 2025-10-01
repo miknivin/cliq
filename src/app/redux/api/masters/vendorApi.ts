@@ -50,6 +50,10 @@ export interface VendorListResponse {
   vendors: VendorResponse['vendor'][];
 }
 
+export interface VendorLiteResponse {
+  name: string;
+}
+
 export const vendorApi = createApi({
   reducerPath: 'vendorApi',
   baseQuery: fetchBaseQuery({ baseUrl: '/api/masters' }),
@@ -104,7 +108,13 @@ export const vendorApi = createApi({
       },
       invalidatesTags: ['Vendors'],
     }),
+    getVendorLite: builder.query<VendorLiteResponse, string>({
+      query: (id) => ({
+        url: `/vendor/${id}/lite`,
+      }),
+      providesTags: (result, error, id) => [{ type: 'Vendors', id }],
+    }),
   }),
 });
 
-export const { useCreateVendorMutation, useGetVendorsQuery, useUpdateVendorStatusMutation } = vendorApi;
+export const { useCreateVendorMutation, useGetVendorsQuery, useUpdateVendorStatusMutation, useGetVendorLiteQuery } = vendorApi;

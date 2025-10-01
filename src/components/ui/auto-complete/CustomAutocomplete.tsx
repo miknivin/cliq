@@ -7,14 +7,16 @@ interface AutocompleteProps {
   onChange: (value: string) => void;
   onNoMatchClick: () => void;
   onInput?: (value: string) => void;
-  isLoading?:boolean | string
+  isLoading?:boolean | string;
+  customInputClass?:string
 }
 
-const Autocomplete: React.FC<AutocompleteProps> = ({ data, value, onChange, onNoMatchClick,onInput, isLoading=false  }) => {
+const Autocomplete: React.FC<AutocompleteProps> = ({ data, value, onChange, onNoMatchClick,onInput, isLoading=false, customInputClass  }) => {
   const [filteredData, setFilteredData] = useState<string[]>([]);
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
+  const defaultClass = "bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+   const inputClass = customInputClass ?? defaultClass;
   // Handle input change and filter data
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
@@ -63,7 +65,7 @@ const handleItemClick = (item: string) => {
         <input
           type="text"
           id="autocomplete-search"
-          className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+          className={inputClass}
           value={value}
           onChange={handleInputChange}
           required
@@ -121,7 +123,7 @@ const handleItemClick = (item: string) => {
       {isOpen && filteredData.length > 0 && (
         <div
           id="dropdown"
-          className="z-10 bg-white divide-y divide-gray-100 rounded-lg shadow-sm w-full dark:bg-gray-600 absolute mt-1"
+          className="z-10 bg-white divide-y divide-gray-100 rounded-lg shadow-sm w-full dark:bg-gray-600 absolute mt-1 max-h-[200px] overflow-y-auto"
         >
           <ul
             className="py-2 text-sm text-gray-700 dark:text-gray-200"

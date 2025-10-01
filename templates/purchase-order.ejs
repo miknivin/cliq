@@ -1,0 +1,124 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Purchase Order</title>
+  <link rel="stylesheet" href="/purchase-order.css">
+</head>
+<body>
+  <div id="printSpace" class="bg-gray-100 p-4 print:bg-white">
+    <div class="page-container bg-white shadow-lg rounded-lg p-6 print:shadow-none print:rounded-none print:w-[794px]">
+      <% const rowsPerPage = 20; /* Adjust based on testing */ %>
+      <% const items = purchaseOrder.items; %>
+      <% for (let page = 0; page < Math.ceil(items.length / rowsPerPage); page++) { %>
+        <% if (page > 0) { %>
+          <div class="page-break"></div>
+        <% } %>
+        <table class="w-full border-collapse">
+          <thead class="repeat-header">
+            <tr>
+              <td>
+                <div class="header-content">
+                  <div class="flex justify-between items-center border-b pb-4 mb-6 print:border-b print:pb-4">
+                    <div>
+                      <img src="https://ik.imagekit.io/c1jhxlxiy/logo-placeholder.png?updatedAt=1758099087112" alt="Company Logo" width="120" height="auto" class="mb-2 print:mb-2">
+                      <h1 class="text-base font-bold text-gray-900">XYZ Corporation</h1>
+                      <p class="text-xs text-gray-600">
+                        456 Business Avenue, Suite 100<br>
+                        City, Country, ZIP: 12345<br>
+                        Email: info@xyzcorp.com | Phone: +1-555-987-6543
+                      </p>
+                    </div>
+                    <div class="text-right">
+                      <h2 class="text-sm font-semibold text-gray-900">Purchase Order</h2>
+                      <p class="text-xs text-gray-600">
+                        PO Number: <%= purchaseOrder.poNumber %><br>
+                        Date: <%= new Date(purchaseOrder.date).toLocaleDateString() %>
+                      </p>
+                    </div>
+                  </div>
+                  <div class="mb-6">
+                    <h3 class="text-sm font-semibold text-gray-900">To:</h3>
+                    <p class="text-xs text-gray-600">
+                      <%= purchaseOrder.vendor.name %><br>
+                      <%= purchaseOrder.vendor.address %><br>
+                      <% if (purchaseOrder.vendor.contact) { %>
+                        Name: <%= purchaseOrder.vendor.contact %><br>
+                      <% } %>
+                      <% if (purchaseOrder.vendor.phone) { %>
+                        Phone: <%= purchaseOrder.vendor.phone %>
+                      <% } %>
+                    </p>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <div class="overflow-x-auto print:overflow-x-visible">
+                  <table class="w-full border-collapse">
+                    <thead>
+                      <tr class="bg-gray-200">
+                        <th class="p-2 text-left text-sm font-semibold text-gray-900 border">S.No</th>
+                        <th class="p-2 text-left text-sm font-semibold text-gray-900 border">Code</th>
+                        <th class="p-2 text-left text-sm font-semibold text-gray-900 border">Particulars</th>
+                        <th class="p-2 text-left text-sm font-semibold text-gray-900 border">Qty</th>
+                        <th class="p-2 text-left text-sm font-semibold text-gray-900 border">Rate</th>
+                        <th class="p-2 text-left text-sm font-semibold text-gray-900 border">F.Rate</th>
+                        <th class="p-2 text-left text-sm font-semibold text-gray-900 border">Discount</th>
+                        <th class="p-2 text-left text-sm font-semibold text-gray-900 border">Tax</th>
+                        <th class="p-2 text-left text-sm font-semibold text-gray-900 border">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <% const start = page * rowsPerPage; %>
+                      <% const end = Math.min(start + rowsPerPage, items.length); %>
+                      <% for (let i = start; i < end; i++) { %>
+                        <tr class="border-t border-gray-200">
+                          <td class="p-2 text-sm text-gray-900 border"><%= items[i].sno %></td>
+                          <td class="p-2 text-sm text-gray-900 border"><%= items[i].code %></td>
+                          <td class="p-2 text-sm text-gray-900 border"><%= items[i].particulars %></td>
+                          <td class="p-2 text-sm text-gray-900 border"><%= items[i].qty %></td>
+                          <td class="p-2 text-sm text-gray-900 border"><%= currencySymbol %><%= items[i].rate %></td>
+                          <td class="p-2 text-sm text-gray-900 border"><%= currencySymbol %><%= items[i].frate %></td>
+                          <td class="p-2 text-sm text-gray-900 border"><%= currencySymbol %><%= items[i].discount %></td>
+                          <td class="p-2 text-sm text-gray-900 border"><%= currencySymbol %><%= items[i].tax %></td>
+                          <td class="p-2 text-sm text-gray-900 border"><%= currencySymbol %><%= items[i].total %></td>
+                        </tr>
+                      <% } %>
+                    </tbody>
+                    <% if (page === Math.ceil(items.length / rowsPerPage) - 1) { %>
+                      <tfoot>
+                        <tr class="bg-gray-100 font-semibold">
+                          <td colspan="6" class="p-2 text-sm text-gray-900 border">Total</td>
+                          <td class="p-2 text-sm text-gray-900 border"><%= currencySymbol %><%= purchaseOrder.totals.discount %></td>
+                          <td class="p-2 text-sm text-gray-900 border"><%= currencySymbol %><%= purchaseOrder.totals.tax %></td>
+                          <td class="p-2 text-sm text-gray-900 border"><%= currencySymbol %><%= purchaseOrder.totals.total %></td>
+                        </tr>
+                      </tfoot>
+                    <% } %>
+                  </table>
+                </div>
+                <% if (page === Math.ceil(items.length / rowsPerPage) - 1) { %>
+                  <div class="mt-6 terms-and-conditions">
+                    <h3 class="text-lg font-semibold text-gray-900">Terms and Conditions</h3>
+                    <p class="text-sm text-gray-600">
+                      1. Payment due within 30 days of invoice date.<br>
+                      2. All goods remain the property of XYZ Corporation until fully paid.<br>
+                      3. Freight charges are included as specified.
+                    </p>
+                  </div>
+                <% } %>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      <% } %>
+    </div>
+  </div>
+</body>
+</html>

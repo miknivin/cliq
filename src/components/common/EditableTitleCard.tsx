@@ -1,18 +1,20 @@
-"use client"
+"use client";
 import React, { useState } from "react";
-
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '@/app/redux/rootReducer';
+import { updateField } from '@/app/redux/slices/purchase-order/purchaseOrderSlice';
 
 interface EditableTitleCardProps {
-  title: string;
   className?: string;
   children: React.ReactNode;
 }
 
 const EditableTitleCard: React.FC<EditableTitleCardProps> = ({
-  title,
   children,
   className = "",
 }) => {
+  const dispatch = useDispatch();
+  const title = useSelector((state: RootState) => state.purchaseOrderForm.name);
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState(title);
 
@@ -22,9 +24,7 @@ const EditableTitleCard: React.FC<EditableTitleCardProps> = ({
 
   const handleSaveClick = () => {
     setIsEditing(false);
-    const url = new URL(window.location.href);
-    url.searchParams.set("title", editedTitle);
-    window.history.pushState({}, "", url);
+    dispatch(updateField({ group: 'name', value: editedTitle }));
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -52,25 +52,27 @@ const EditableTitleCard: React.FC<EditableTitleCardProps> = ({
           </h3>
         )}
         {!isEditing && (
-          <button onClick={handleEditClick} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+          <button
+            onClick={handleEditClick}
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          >
             <svg
-                className="w-6 h-6 text-gray-800 dark:text-white"
-                aria-hidden="true"
-                xmlns="http://www.w3.org/2000/svg"
-                width={24}
-                height={24}
-                fill="none"
-                viewBox="0 0 24 24"
-                >
-                <path
-                    stroke="currentColor"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="1.5"
-                    d="m14.304 4.844 2.852 2.852M7 7H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-4.5m2.409-9.91a2.017 2.017 0 0 1 0 2.853l-6.844 6.844L8 14l.713-3.565 6.844-6.844a2.015 2.015 0 0 1 2.852 0Z"
-                />
-                </svg>
-
+              className="w-6 h-6 text-gray-800 dark:text-white"
+              aria-hidden="true"
+              xmlns="http://www.w3.org/2000/svg"
+              width={24}
+              height={24}
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="1.5"
+                d="m14.304 4.844 2.852 2.852M7 7H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-4.5m2.409-9.91a2.017 2.017 0 0 1 0 2.853l-6.844 6.844L8 14l.713-3.565 6.844-6.844a2.015 2.015 0 0 1 2.852 0Z"
+              />
+            </svg>
           </button>
         )}
       </div>

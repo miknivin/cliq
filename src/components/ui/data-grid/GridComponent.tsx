@@ -118,7 +118,7 @@ export default function GridComponent<T extends { id: number }>({
               .map((col) => (
                 <div
                   key={col.field}
-                  className="p-2 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700"
+                  className="p-2 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border"
                 >
                   {col.field !== "actions" && totals[col.field] ? `${totals[col.field]}` : ""}
                 </div>

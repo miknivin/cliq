@@ -1,66 +1,248 @@
-"use client"
-import React from 'react';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
+import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/app/redux/rootReducer';
-import { updateField, resetForm, submitForm } from '@/app/redux/slices/purchase-order/purchaseOrderSlice';
+import { updateField, resetForm, PurchaseOrderState } from '@/app/redux/slices/purchase-order/purchaseOrderSlice';
+import { usePurchaseOrderTotals } from '@/hooks/useOrderTotal';
+import { useCreatePurchaseOrderMutation } from '@/app/redux/api/purchaseOrderApi';
+import { toast } from 'react-toastify';
+import { validatePurchaseOrder, ValidationError } from '@/lib/validators/purchaseOrderValidation';
+import PurchaseOrderPage from '@/app/(admin)/(others-pages)/po/page';
+import { Modal } from '@/components/modal';
+import axios from 'axios';
 
 const PurchaseOrderFooter = () => {
   const dispatch = useDispatch();
-  const { footer, name } = useSelector((state: RootState) => state.purchaseOrderForm);
-  const state = useSelector((state: RootState) => state.purchaseOrderForm);
-  const { orderDetails, vendorInformation } = useSelector((state: RootState) => state.purchaseOrderForm);
-  // Handle input changes for footer fields
+  const { name, orderDetails, vendorInformation, financialDetails, productInformation, items, footer } = useSelector(
+    (state: RootState) => state.purchaseOrderForm
+  );
+  const { total, discount, netTotal } = usePurchaseOrderTotals();
+  const [createPurchaseOrder, { isLoading, error }] = useCreatePurchaseOrderMutation();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isFetching, setIsFetching] = useState(false);
+  const [vendorName, setVendorName] = useState<string | null>(null);
+  const [productNames, setProductNames] = useState<(string | null)[]>([]);
+  const [currency, setCurrency] = useState<string | null>(null);
   const handleFieldChange = (field: string, value: string | boolean) => {
-    dispatch(updateField({ group: 'footer', field, value }));
+    if (field === 'notes' || field === 'taxable') {
+      dispatch(updateField({ group: 'footer', field, value }));
+    } else {
+      dispatch(updateField({ group: 'footer', field, value: parseFloat(value as string) || 0 }));
+    }
   };
 
-  // Handle form submission
-  const handleSubmit = () => {
-    // Basic validation for required fields
-
-    if (!name) {
-      alert('Name is required');
-      return;
+  const fetchVendorName = async (vendorId: string) => {
+    try {
+      const response = await axios.get(`/api/masters/vendor/${vendorId}/lite`);
+      return response.data.name || vendorId; // Return name or fallback to ID
+    } catch (error) {
+      console.error('Error fetching vendor name:', error);
+      return vendorId; // Fallback to ID on error
     }
-    if (!orderDetails.no) {
-      alert('Order number is required');
-      return;
-    }
-    if (!vendorInformation.vendor) {
-      alert('Vendor is required');
-      return;
-    }
-
-    // Dispatch submitForm action
-    dispatch(submitForm());
-    alert('Purchase order submitted successfully! Check console for details.');
   };
 
-  // Handle preview (just log the state for now)
-  const handlePreview = () => {
+  const fetchProductName = async (productId: string) => {
+    try {
+      const response = await axios.get(`/api/masters/product/${productId}/lite`);
+      return response.data.name || productId; // Return name or fallback to ID
+    } catch (error) {
+      console.error('Error fetching product name:', error);
+      return productId; // Fallback to ID on error
+    }
+  };
 
-    console.log('Preview:', {
-      name: state.name,
-      orderDetails: state.orderDetails,
-      vendorInformation: state.vendorInformation,
-      financialDetails: state.financialDetails,
-      productInformation: state.productInformation,
-      items: state.items,
-      footer: state.footer,
+    const fetchCurrency = async (currencyCode: string) => {
+    try {
+      const response = await axios.get(`/api/masters/currency`, {
+        params: { code: currencyCode },
+      });
+      // Assuming the response returns an array, take the first match (exact code match)
+      const currencyData = response.data[0];
+      return currencyData ? `${currencyData.symbol}` : currencyCode; // Return formatted string or fallback to code
+    } catch (error) {
+      console.error('Error fetching currency:', error);
+      return currencyCode; // Fallback to code on error
+    }
+  };
+
+  const handleSubmit = async () => {
+    // Prepare data for validation
+    const data = {
+      name,
+      orderDetails: {
+        ...orderDetails,
+        date: orderDetails.date || new Date().toISOString(),
+        dueDate: orderDetails.dueDate || new Date().toISOString(),
+        deliveryDate: orderDetails.deliveryDate || new Date().toISOString(),
+      },
+      vendorInformation,
+      financialDetails,
+      productInformation,
+      items: items.map((item: any) => ({
+        ...item,
+        particulars: item.particulars || '',
+        uom: item.uom || '',
+        sno: item.sno || '',
+        code: item.code || '',
+        ubc: item.ubc || '',
+        remark: item.remark || '',
+        warehouse: item.warehouse || '',
+        frate: item.frate || 0,
+        qty: item.qty || 0,
+        rate: item.rate || 0,
+        foc: item.foc || 0,
+        gross: item.gross || 0,
+        discountPercent: item.discountPercent || 0,
+        discount: item.discount || 0,
+        taxPercent: item.taxPercent || 0,
+        tax: item.tax || 0,
+        total: item.total || 0,
+      })),
+      footer: {
+        ...footer,
+        total,
+        discount,
+        netTotal,
+      },
+      isSubmitted: true,
+    };
+
+    // Client-side validation
+    const validationErrors: ValidationError[] = validatePurchaseOrder(data);
+    if (validationErrors.length > 0) {
+      const errorMessage = validationErrors.map((e) => `${e.message} (${e.field})`).join('\n');
+      toast.error(`Validation failed:\n${errorMessage}`, {
+        position: 'top-right',
+        autoClose: 5000,
+      });
+      return;
+    }
+
+    try {
+      const payload: PurchaseOrderState = data;
+      const response = await createPurchaseOrder(payload).unwrap();
+      toast.success(response.message, {
+        position: 'top-right',
+        autoClose: 3000,
+      });
+      dispatch(resetForm()); // Clear form after successful submission
+      setVendorName(null); // Reset vendor name
+      setProductNames([]); // Reset product names
+    } catch (err) {
+      const errorResponse = err as { data: { message: string; errors?: ValidationError[]; error?: string }; status: number };
+      const errorMessage = errorResponse?.data?.errors
+        ? errorResponse?.data?.errors.map((e) => `${e?.message} (${e?.field})`).join('\n')
+        : errorResponse?.data?.error || 'Unknown error';
+      toast.error(`Submission failed: ${errorResponse.data.message}\n${errorMessage}`, {
+        position: 'top-right',
+        autoClose: 5000,
+      });
+    }
+  };
+
+  const handlePreview = async () => {
+    setIsFetching(true);
+    toast.info('Fetching vendor and product details...', {
+      position: 'top-right',
+      autoClose: 3000,
     });
-    // alert('Preview logged to console.');
+
+    // Fetch vendor name
+    const fetchedVendorName = vendorInformation.vendor ? await fetchVendorName(vendorInformation.vendor) : vendorInformation.vendor;
+    setVendorName(fetchedVendorName);
+
+    // Fetch product names
+    const fetchedProductNames = await Promise.all(
+      items.map(async (item) => {
+        return item.particulars ? await fetchProductName(item.particulars) : item.particulars || '';
+      })
+    );
+    setProductNames(fetchedProductNames);
+
+    const fetchedCurrency = financialDetails.currency ? await fetchCurrency(financialDetails.currency) : financialDetails.currency;
+    setCurrency(fetchedCurrency);
+    console.log(fetchedCurrency,'currency');
+    
+    setIsFetching(false);
+
+    // Prepare data for preview
+    const data: PurchaseOrderState = {
+      name,
+      orderDetails: {
+        ...orderDetails,
+        date: orderDetails.date || new Date().toISOString(),
+        dueDate: orderDetails.dueDate || new Date().toISOString(),
+        deliveryDate: orderDetails.deliveryDate || new Date().toISOString(),
+      },
+      vendorInformation,
+      financialDetails,
+      productInformation,
+      items: items.map((item, index) => ({
+        ...item,
+        particulars: fetchedProductNames[index] || item.particulars || '',
+        uom: item.uom || '',
+        sno: item.sno || '',
+        code: item.code || '',
+        ubc: item.ubc || '',
+        remark: item.remark || '',
+        warehouse: item.warehouse || '',
+        frate: item.frate || 0,
+        qty: item.qty || 0,
+        rate: item.rate || 0,
+        foc: item.foc || 0,
+        gross: item.gross || 0,
+        discountPercent: item.discountPercent || 0,
+        discount: item.discount || 0,
+        taxPercent: item.taxPercent || 0,
+        tax: item.tax || 0,
+        total: item.total || 0,
+      })),
+      footer: {
+        ...footer,
+        total,
+        discount,
+        netTotal,
+      },
+      isSubmitted: false,
+    };
+
+    // Client-side validation
+    const validationErrors: ValidationError[] = validatePurchaseOrder(data);
+    if (validationErrors.length > 0) {
+      const errorMessage = validationErrors.map((e) => `${e.message} (${e.field})`).join('\n');
+      toast.error(`Validation failed:\n${errorMessage}`, {
+        position: 'top-right',
+        autoClose: 5000,
+      });
+      setVendorName(null); // Reset vendor name on validation failure
+      setProductNames([]); // Reset product names on validation failure
+      return;
+    }
+
+    // If validation passes, open the modal
+    setIsModalOpen(true);
+    console.log('Preview:', data); // For debugging
   };
 
-  // Handle clear (reset form)
   const handleClear = () => {
     dispatch(resetForm());
-    alert('Form cleared.');
+    setVendorName(null); // Reset vendor name
+    setProductNames([]); // Reset product names
+    toast.info('Form cleared', {
+      position: 'top-right',
+      autoClose: 3000,
+    });
   };
 
-  // Handle cancel (reset form and notify)
   const handleCancel = () => {
     dispatch(resetForm());
-    alert('Form cancelled.');
+    setVendorName(null); // Reset vendor name
+    setProductNames([]); // Reset product names
+    toast.info('Form cancelled', {
+      position: 'top-right',
+      autoClose: 3000,
+    });
   };
 
   return (
@@ -101,9 +283,9 @@ const PurchaseOrderFooter = () => {
             <input
               type="text"
               id="total-input"
-              value={footer.total}
-              onChange={(e) => handleFieldChange('total', e.target.value)}
-              className="block w-full p-2 text-gray-900 border border-gray-300 rounded-lg bg-gray-50 text-xs focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+              value={total.toFixed(2)}
+              readOnly
+              className="block w-full p-2 text-gray-900 border border-gray-300 rounded-lg bg-gray-100 text-xs focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
             />
           </div>
           <div>
@@ -113,9 +295,9 @@ const PurchaseOrderFooter = () => {
             <input
               type="text"
               id="discount-input"
-              value={footer.discount}
-              onChange={(e) => handleFieldChange('discount', e.target.value)}
-              className="block w-full p-2 text-gray-900 border border-gray-300 rounded-lg bg-gray-50 text-xs focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+              value={discount.toFixed(2)}
+              readOnly
+              className="block w-full p-2 text-gray-900 border border-gray-300 rounded-lg bg-gray-100 text-xs focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
             />
           </div>
           <div>
@@ -149,27 +331,29 @@ const PurchaseOrderFooter = () => {
             <input
               type="text"
               id="net-total-input"
-              value={footer.netTotal}
-              onChange={(e) => handleFieldChange('netTotal', e.target.value)}
-              className="block w-full p-2 text-gray-900 border border-gray-300 rounded-lg bg-gray-50 text-xs focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+              value={netTotal.toFixed(2)}
+              readOnly
+              className="block w-full p-2 text-gray-900 border border-gray-300 rounded-lg bg-gray-100 text-xs focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
             />
           </div>
         </div>
       </div>
       <div className="flex justify-end space-x-2">
         <button
-          type='button'
-          role='button'
+          type="button"
+          role="button"
           className="flex justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
           onClick={handlePreview}
+          disabled={isFetching}
         >
-          Preview
+          {isFetching ? 'Fetching...' : 'Preview'}
         </button>
         <button
           className="flex justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
           onClick={handleSubmit}
+          disabled={isLoading || isFetching}
         >
-          Save
+          {isLoading ? 'Submitting...' : 'Save'}
         </button>
         <button
           className="flex justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
@@ -184,6 +368,54 @@ const PurchaseOrderFooter = () => {
           Cancel
         </button>
       </div>
+      {error && (
+        <div className="mt-2 text-red-600 dark:text-red-400">
+          Error: {(error as any).data?.message || 'Submission failed'}
+        </div>
+      )}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setVendorName(null); // Reset vendor name
+          setProductNames([]); // Reset product names
+        }}
+        className="max-w-4xl p-6"
+        showCloseButton={true}
+        isFullscreen={false}
+      >
+        <PurchaseOrderPage
+          purchaseOrder={{
+            currency: currency || financialDetails.currency || '',
+            poNumber: orderDetails.no,
+            date: orderDetails.date,
+            vendor: {
+              name: vendorName || vendorInformation.vendor, // Use fetched vendor name or fallback to ID
+              address: vendorInformation.address,
+              contact: vendorInformation.attention,
+              phone: '', // Add phone if available
+            },
+            items: items.map((item, index) => ({
+              sno: item.sno,
+              code: item.code,
+              particulars: productNames[index] || item.particulars || '', // Use fetched product name or fallback to ID
+              qty: item.qty.toString(),
+              rate: item.rate.toString(),
+              frate: item.frate.toString(),
+              discount: item.discount.toString(),
+              tax: item.tax.toString(),
+              total: item.total.toString(),
+            })),
+            totals: {
+              gross: items.reduce((sum, item) => sum + item.gross, 0).toString(),
+              discount: footer.discount.toString(),
+              tax: items.reduce((sum, item) => sum + item.tax, 0).toString(),
+              frate: items.reduce((sum, item) => sum + item.frate, 0).toString(),
+              total: footer.netTotal.toString(),
+            },
+          }}
+        />
+      </Modal>
     </div>
   );
 };

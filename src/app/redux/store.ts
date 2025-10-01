@@ -6,7 +6,7 @@ import { uomApi } from "./api/masters/uomApi";
 import { categoryApi } from "./api/masters/categoryApi";
 import { productApi } from "./api/masters/productApi";
 import { taxApi } from "./api/masters/taxApi";
-
+import { purchaseOrderApi } from "./api/purchaseOrderApi";
 
 const store = configureStore({
   reducer: rootReducer,
@@ -17,7 +17,8 @@ const store = configureStore({
       uomApi.middleware,
       categoryApi.middleware,
       productApi.middleware,
-      taxApi.middleware
+      taxApi.middleware,
+      purchaseOrderApi.middleware
     ),
 });
 

@@ -1,0 +1,14 @@
+{
+  "functions": {
+    "app/api/purchase-order/pdf/route.tsx": {
+      "memory": 1024,
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/purchase-order.ejs",
+      "destination": "/api/block-ejs"
+    }
+  ]
+}

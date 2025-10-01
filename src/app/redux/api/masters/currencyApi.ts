@@ -13,13 +13,20 @@ export const currencyApi = createApi({
   baseQuery: fetchBaseQuery({ baseUrl: '/api/masters' }),
   tagTypes: ['Currencies'],
   endpoints: (builder) => ({
-    getCurrencies: builder.query<ICurrency[], { searchTerm?: string }>({
-      query: ({ searchTerm }) => ({
-        url: '/currency',
-        params: searchTerm ? { searchTerm } : undefined,
-      }),
+    getCurrencies: builder.query<ICurrency[], { code?: string; searchTerm?: string }>({
+      query: ({ code, searchTerm }) => {
+        const params: Record<string, string> = {};
+        if (code) params.code = code;
+        if (searchTerm) params.searchTerm = searchTerm;
+
+        return {
+          url: '/currency',
+          params,
+        };
+      },
       providesTags: ['Currencies'],
     }),
+
     createCurrency: builder.mutation<ICurrency, CreateCurrencyInput>({
       query: (newCurrency) => ({
         url: '/currency',

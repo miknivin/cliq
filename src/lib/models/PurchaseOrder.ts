@@ -1,13 +1,15 @@
 import { Schema, model, models, Document, Types } from 'mongoose';
-
-interface IPurchaseOrderItem {
+import { IVendor } from './masters/Vendor';
+import { Product } from './masters/Product';
+import mongoose from 'mongoose';
+ export interface IPurchaseOrderItem {
   sno: string;
   code: string;
   ubc: string;
-  particulars: Types.ObjectId; // References Product
+  particulars: Types.ObjectId;
   remark: string;
   warehouse: string;
-  uom: Types.ObjectId; // References UOM
+  uom: Types.ObjectId; 
   frate: number;
   qty: number;
   rate: number;
@@ -20,7 +22,7 @@ interface IPurchaseOrderItem {
   total: number;
 }
 
-interface IPurchaseOrder extends Document {
+export interface IPurchaseOrder extends Document {
   name: string;
   orderDetails: {
     voucherType: string;
@@ -30,7 +32,7 @@ interface IPurchaseOrder extends Document {
     deliveryDate: Date;
   };
   vendorInformation: {
-    vendor: Types.ObjectId; // Changed to reference Vendor
+    vendor: Types.ObjectId | IVendor;
     address: string;
     attention: string;
   };
@@ -121,8 +123,26 @@ const purchaseOrderSchema = new Schema<IPurchaseOrder>(
   { timestamps: true }
 );
 
-// Index for faster name queries
-purchaseOrderSchema.index({ name: 1 });
+purchaseOrderSchema.post('save', async function (doc, next) {
+  try {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    for (const item of doc.items) {
+      await Product.updateOne(
+        { _id: item.particulars },
+        { $inc: { 'stockAndMeasurement.openingStock': item.qty } },
+        { session }
+      );
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+    next();
+  } catch (err) {
+    next(err as Error);
+  }
+});
 
 const PurchaseOrder = models.PurchaseOrder || model<IPurchaseOrder>('PurchaseOrder', purchaseOrderSchema);
 

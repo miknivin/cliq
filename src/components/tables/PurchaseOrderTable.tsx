@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 import React, { useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -14,10 +13,10 @@ interface Row {
   sno: string;
   code: string;
   ubc: string;
-  particulars: string; // Stores Product._id
+  particulars: string;
   remark: string;
   warehouse: string;
-  uom: string; // Stores UOM._id
+  uom: string; 
   frate: string;
   qty: string;
   rate: string;
@@ -86,32 +85,34 @@ export default function PurchaseOrderGrid() {
   return (
     <div className="p-4 rounded-lg shadow-md w-full overflow-x-auto bg-white dark:bg-gray-800">
       {/* Action Buttons */}
-      <div className="mb-4 flex gap-2">
-        <button
-          className="flex justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-          onClick={handleAddRow}
-        >
-          Add Row
-        </button>
-        <button
-          className="flex justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
-          onClick={() => handleRowDelete(rows[rows.length - 1].id)}
-          disabled={rows.length <= 1}
-        >
-          Remove Last Row
-        </button>
+      <div>
+        <div className="mb-4 flex gap-2">
+          <button
+            className="flex justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            onClick={handleAddRow}
+          >
+            Add Row
+          </button>
+          <button
+            className="flex justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+            onClick={() => handleRowDelete(rows[rows.length - 1].id)}
+            disabled={rows.length <= 1}
+          >
+            Remove Last Row
+          </button>
+        </div>
+        {/* Grid Component */}
+        <GridComponent
+          columns={initialColumns}
+          rows={rows}
+          onRowUpdate={handleRowUpdate}
+          onRowDelete={handleRowDelete}
+          products={products}
+          uoms={uoms}
+          isProductsLoading={isProductsLoading}
+          isUOMsLoading={isUOMsLoading}
+        />
       </div>
-      {/* Grid Component */}
-      <GridComponent
-        columns={initialColumns}
-        rows={rows}
-        onRowUpdate={handleRowUpdate}
-        onRowDelete={handleRowDelete}
-        products={products}
-        uoms={uoms}
-        isProductsLoading={isProductsLoading}
-        isUOMsLoading={isUOMsLoading}
-      />
     </div>
   );
 }

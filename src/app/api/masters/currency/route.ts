@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-
 import dbConnect from '@/lib/db/connection';
 import Currency from '@/lib/models/masters/Currency';
 
@@ -7,14 +6,20 @@ export async function GET(req: NextRequest) {
   try {
     await dbConnect();
 
-    // Extract SearchTerm from query parameters
+    // Extract code and searchTerm from query parameters
     const { searchParams } = new URL(req.url);
+    const code = searchParams.get('code');
     const searchTerm = searchParams.get('searchTerm');
 
     // Build query
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const query: any = {};
-    if (searchTerm) {
+
+    // If code is provided, prioritize exact match
+    if (code) {
+      query.code = code.toUpperCase(); // Ensure code is uppercase to match schema
+    } else if (searchTerm) {
+      // Fallback to searchTerm logic if no code is provided
       query.$or = [
         { code: { $regex: searchTerm, $options: 'i' } }, // Case-insensitive regex search on code
         { name: { $regex: searchTerm, $options: 'i' } }, // Case-insensitive regex search on name
@@ -22,7 +27,7 @@ export async function GET(req: NextRequest) {
       ];
     }
 
-    // Fetch currencies with optional search
+    // Fetch currencies with the constructed query
     const currencies = await Currency.find(query).lean();
 
     // Transform Date fields to strings

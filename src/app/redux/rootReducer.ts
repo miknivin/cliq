@@ -9,6 +9,7 @@ import { productApi } from "./api/masters/productApi";
 import productFormSlice from "./slices/masters/productFormSlice";
 import { taxApi } from "./api/masters/taxApi";
 import purchaseOrderSlice from "./slices/purchase-order/purchaseOrderSlice";
+import { purchaseOrderApi } from "./api/purchaseOrderApi";
 
 
 const rootReducer = combineReducers({
@@ -20,7 +21,8 @@ const rootReducer = combineReducers({
   [currencyApi.reducerPath]:currencyApi.reducer,
   [categoryApi.reducerPath]:categoryApi.reducer,
   [taxApi.reducerPath]:taxApi.reducer,
-  [uomApi.reducerPath]:uomApi.reducer
+  [uomApi.reducerPath]:uomApi.reducer,
+  [purchaseOrderApi.reducerPath]:purchaseOrderApi.reducer,
 });
 
 

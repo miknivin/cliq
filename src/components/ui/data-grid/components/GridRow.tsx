@@ -10,10 +10,10 @@ import Autocomplete from "../../auto-complete/CustomAutocomplete";
 // Define Tax interface locally for populated taxGroup
 interface Tax {
   _id: string;
-  rate: number; // The tax rate (e.g., 5 for 5%)
-  name?: string; // Optional: Tax group name (e.g., "GST 5%")
-  description?: string; // Optional: Description of the tax group
-  isActive?: boolean; // Optional: Whether the tax group is active
+  rate: number; 
+  name?: string; 
+  description?: string; 
+  isActive?: boolean; 
   [key: string]: any; // Allow additional properties from populated Tax document
 }
 
@@ -55,10 +55,13 @@ export default function GridRow<T extends { id: number }>({
 
   const handleProductChange = useCallback(
     (value: string) => {
+      const fRate = parseFloat((row as any).frate as string) || 0;
+      console.log(fRate,'frate');
       const selectedProduct = products.find((p) => p.basicProductInfo.name === value);
       if (selectedProduct) {
         // Get qty from row or default to 1
         const qty = parseFloat((row as any).qty as string) || 1;
+      
         // Get tax rate
         const taxRate =
           typeof selectedProduct.basicProductInfo.taxGroup === "object" &&
@@ -153,6 +156,27 @@ export default function GridRow<T extends { id: number }>({
     [onRowUpdate, row]
   );
 
+  const handleFrateChange = useCallback(
+    (value: string) => {
+      const frate = parseFloat(value) || 0;
+      onRowUpdate(row.id, "frate" as keyof T, frate.toString());
+
+      const qty = parseFloat((row as any).qty as string) || 1;
+      const rate = parseFloat((row as any).rate as string) || 0;
+      const taxPercent = parseFloat((row as any).taxPercent as string) || 0;
+      const discount = parseFloat((row as any).discount as string) || 0;
+
+      const gross = qty * rate;
+      const taxAmount = (qty * rate * taxPercent) / 100;
+      const total = gross - discount + taxAmount + frate;
+
+      onRowUpdate(row.id, "gross" as keyof T, gross.toFixed(2));
+      onRowUpdate(row.id, "tax" as keyof T, taxAmount.toFixed(2));
+      onRowUpdate(row.id, "total" as keyof T, total.toFixed(2));
+    },
+    [onRowUpdate, row]
+  );
+
   return (
     <div className="grid border-t border-gray-200 dark:border-gray-700" style={{ gridTemplateColumns }}>
       {columns
@@ -169,6 +193,7 @@ export default function GridRow<T extends { id: number }>({
               </button>
             ) : col.inputType === "autocomplete" && col.field === "particulars" ? (
               <Autocomplete
+                customInputClass={'w-full border-none bg-transparent p-1 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500'}
                 data={products.map((product) => product.basicProductInfo.name)}
                 value={
                   products.find((p) => p._id === row[col.field as keyof T])?.basicProductInfo.name ||
@@ -180,6 +205,7 @@ export default function GridRow<T extends { id: number }>({
               />
             ) : col.inputType === "autocomplete" && col.field === "uom" ? (
               <Autocomplete
+                customInputClass={'w-full border-none bg-transparent p-1 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500'}
                 data={uoms.map((uom) => uom.name)}
                 value={
                   uoms.find((u) => u._id === row[col.field as keyof T])?.name ||
@@ -201,10 +227,13 @@ export default function GridRow<T extends { id: number }>({
                     handleDiscountChange(col.field, e.target.value);
                   } else if (col.field === "qty") {
                     handleQtyChange(e.target.value);
-                  } else {
+                  }else if (col.field === "frate") {
+                    handleFrateChange(e.target.value);
+                  }else {
                     onRowUpdate(row.id, col.field as keyof T, e.target.value);
                   }
                 }}
+                min={col.inputType === 'number' ? '0' : undefined}
                 className="w-full border-none bg-transparent p-1 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             )}

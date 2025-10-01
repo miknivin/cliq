@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Purchase Order</title>
+      <link rel="stylesheet" href="/purchase-order.css">
+    </head>
+    <body>
+      <div id="printSpace" class="bg-gray-100 p-4 print:bg-white max-h-[95vh]">
+        <div class="w-[794px] mx-auto bg-white shadow-lg rounded-lg p-6 print:shadow-none print:rounded-none print:w-[794px]">
+          <div id="toBeRepeated">
+            <div class="flex justify-between items-center border-b pb-4 mb-6 print:border-b print:pb-4">
+              <div>
+                <img src="https://ik.imagekit.io/c1jhxlxiy/logo-placeholder.png?updatedAt=1758099087112" alt="Company Logo" width="150" height="50" class="mb-2 print:mb-2">
+                <h1 class="text-2xl font-bold text-gray-900">XYZ Corporation</h1>
+                <p class="text-sm text-gray-600">
+                  456 Business Avenue, Suite 100<br>
+                  City, Country, ZIP: 12345<br>
+                  Email: info@xyzcorp.com | Phone: +1-555-987-6543
+                </p>
+              </div>
+              <div class="text-right">
+                <h2 class="text-xl font-semibold text-gray-900">Purchase Order</h2>
+                <p class="text-sm text-gray-600">
+                  PO Number: <%= purchaseOrder.poNumber %><br>
+                  Date: <%= new Date(purchaseOrder.date).toLocaleDateString() %>
+                </p>
+              </div>
+            </div>
+            <div class="mb-6">
+              <h3 class="text-lg font-semibold text-gray-900">To:</h3>
+              <p class="text-sm text-gray-600">
+                <%= purchaseOrder.vendor.name %><br>
+                <%= purchaseOrder.vendor.address %><br>
+                <% if (purchaseOrder.vendor.contact) { %>
+                  Name: <%= purchaseOrder.vendor.contact %><br>
+                <% } %>
+                <% if (purchaseOrder.vendor.phone) { %>
+                  Phone: <%= purchaseOrder.vendor.phone %>
+                <% } %>
+              </p>
+            </div>
+          </div>
+          <div class="overflow-x-auto print:overflow-x-visible">
+            <table class="w-full border-collapse">
+              <thead>
+                <tr class="bg-gray-200">
+                  <th class="p-2 text-left text-sm font-semibold text-gray-900 border">S.No</th>
+                  <th class="p-2 text-left text-sm font-semibold text-gray-900 border">Code</th>
+                  <th class="p-2 text-left text-sm font-semibold text-gray-900 border">Particulars</th>
+                  <th class="p-2 text-left text-sm font-semibold text-gray-900 border">Qty</th>
+                  <th class="p-2 text-left text-sm font-semibold text-gray-900 border">Rate</th>
+                  <th class="p-2 text-left text-sm font-semibold text-gray-900 border">F.Rate</th>
+                  <th class="p-2 text-left text-sm font-semibold text-gray-900 border">Discount</th>
+                  <th class="p-2 text-left text-sm font-semibold text-gray-900 border">Tax</th>
+                  <th class="p-2 text-left text-sm font-semibold text-gray-900 border">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% purchaseOrder.items.forEach((item, index) => { %>
+                  <tr class="border-t border-gray-200">
+                    <td class="p-2 text-sm text-gray-900 border"><%= item.sno %></td>
+                    <td class="p-2 text-sm text-gray-900 border"><%= item.code %></td>
+                    <td class="p-2 text-sm text-gray-900 border"><%= item.particulars %></td>
+                    <td class="p-2 text-sm text-gray-900 border"><%= item.qty %></td>
+                    <td class="p-2 text-sm text-gray-900 border"><%= currencySymbol %><%= item.rate %></td>
+                    <td class="p-2 text-sm text-gray-900 border"><%= currencySymbol %><%= item.frate %></td>
+                    <td class="p-2 text-sm text-gray-900 border"><%= currencySymbol %><%= item.discount %></td>
+                    <td class="p-2 text-sm text-gray-900 border"><%= currencySymbol %><%= item.tax %></td>
+                    <td class="p-2 text-sm text-gray-900 border"><%= currencySymbol %><%= item.total %></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+              <tfoot>
+                <tr class="bg-gray-100 font-semibold">
+                  <td colspan="6" class="p-2 text-sm text-gray-900 border">Total</td>
+                  <td class="p-2 text-sm text-gray-900 border"><%= currencySymbol %><%= purchaseOrder.totals.discount %></td>
+                  <td class="p-2 text-sm text-gray-900 border"><%= currencySymbol %><%= purchaseOrder.totals.tax %></td>
+                  <td class="p-2 text-sm text-gray-900 border"><%= currencySymbol %><%= purchaseOrder.totals.total %></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          <div class="mt-6">
+            <h3 class="text-lg font-semibold text-gray-900">Terms and Conditions</h3>
+            <p class="text-sm text-gray-600">
+              1. Payment due within 30 days of invoice date.<br>
+              2. All goods remain the property of XYZ Corporation until fully paid.<br>
+              3. Freight charges are included as specified.
+            </p>
+          </div>
+        </div>
+      </div>
+    </body>
+    </html>
